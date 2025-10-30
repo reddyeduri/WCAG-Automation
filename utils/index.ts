@@ -11,6 +11,7 @@ export { ManualTestFlags } from './manualTestFlags';
 export { ResponsiveHelper } from './responsiveHelper';
 export { WCAG22Helper } from './wcag22Helper';
 export { WCAGAdvancedHelper } from './wcagAdvancedHelper';
+export { MeaningfulSequenceHelper } from './meaningfulSequenceHelper';
 
 // NEW: Comprehensive helpers for 100% coverage
 export { MediaHelper } from './mediaHelper';

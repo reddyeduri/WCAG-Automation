@@ -10,6 +10,7 @@ import { ComprehensiveReportGenerator } from '../utils/comprehensiveReportGenera
 import { ResponsiveHelper } from '../utils/responsiveHelper';
 import { WCAG22Helper } from '../utils/wcag22Helper';
 import { WCAGAdvancedHelper } from '../utils/wcagAdvancedHelper';
+import { MeaningfulSequenceHelper } from '../utils/meaningfulSequenceHelper';
 import type { TestResult } from '../utils/reportGenerator';
 
 /**
@@ -80,6 +81,10 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
     const altText = await AxeHelper.testAltText(page);
     await addResults([altText]);
     console.log(`   • 1.1.1 Alt Text: ${altText.status}`);
+
+    const meaningfulSequence = await MeaningfulSequenceHelper.testMeaningfulSequence(page);
+    await addResults([meaningfulSequence]);
+    console.log(`   • 1.3.2 Meaningful Sequence: ${meaningfulSequence.status}`);
 
     const contrast = await AxeHelper.testColorContrast(page);
     await addResults([contrast]);
