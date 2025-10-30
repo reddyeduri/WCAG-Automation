@@ -8,10 +8,22 @@ export { AxeHelper } from './axeHelper';
 export { KeyboardHelper } from './keyboardHelper';
 export { AccessibilityTreeHelper } from './accessibilityTreeHelper';
 export { ManualTestFlags } from './manualTestFlags';
+export { ResponsiveHelper } from './responsiveHelper';
+export { WCAG22Helper } from './wcag22Helper';
+export { WCAGAdvancedHelper } from './wcagAdvancedHelper';
+
+// NEW: Comprehensive helpers for 100% coverage
+export { MediaHelper } from './mediaHelper';
+export { TimingAnimationHelper } from './timingAnimationHelper';
+export { PredictabilityHelper } from './predictabilityHelper';
+export { HoverFocusHelper } from './hoverFocusHelper';
+export { MotionGestureHelper } from './motionGestureHelper';
+export { ContentAnalysisHelper } from './contentAnalysisHelper';
 
 // Utilities
 export { ExcelParser } from './excelParser';
 export { ReportGenerator } from './reportGenerator';
+export { ComprehensiveReportGenerator } from './comprehensiveReportGenerator';
 
 // Types
 export type { 

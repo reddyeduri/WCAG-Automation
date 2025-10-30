@@ -1,0 +1,26 @@
+INSTRUCTIONS: Place the official Canada logo here
+=================================================
+
+1. Save your Canada logo image as: canada-logo.svg
+2. Place it in this folder: public/
+3. The file should be named exactly: canada-logo.svg
+
+Alternative file formats supported:
+- canada-logo.svg (recommended)
+- canada-logo.png
+- canada-logo.jpg
+
+If using PNG or JPG instead of SVG:
+- Update line in index.html from:
+  <img src="canada-logo.svg" ... />
+  
+  To:
+  <img src="canada-logo.png" ... />
+  (or .jpg)
+
+The official Canada.ca logo can be downloaded from:
+https://www.canada.ca/en/treasury-board-secretariat/services/government-communications/federal-identity-program/technical-specifications/official-symbols/canadian-flag.html
+
+Or use the WET theme logo:
+https://wet-boew.github.io/themes-dist/GCWeb/assets/sig-blk-en.svg
+

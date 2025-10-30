@@ -1,42 +1,405 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>WCAG Quick Scan</title>
+    <title>WCAG 2.1 Accessibility Assessment - Canada.ca Style</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      body { font-family: Segoe UI, Arial, sans-serif; margin: 24px; background: #f9fafb; }
-      h1 { margin-bottom: 1rem; }
-      .row { margin-bottom: 12px; }
-      input { width: 420px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-      button { padding: 10px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-      button:hover { background: #1d4ed8; }
-      button:disabled { background: #94a3b8; cursor: not-allowed; }
-      pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow: auto; max-height: 400px; }
-      a { color: #2563eb; }
+      /* Canada.ca Design System - Based on Web Experience Toolkit (WET) */
+      * { 
+        margin: 0; 
+        padding: 0; 
+        box-sizing: border-box; 
+      }
+      
+      body {
+        font-family: "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #333;
+        background-color: #FFFFFF;
+        min-height: 100vh;
+      }
+      
+      /* Header - Canada.ca style */
+      .header {
+        background-color: #ffffff;
+        border-bottom: 2px solid #26374a;
+        padding: 0;
+      }
+      
+      .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 15px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      
+      .logo {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        gap: 10px;
+      }
+      
+      .flag-img {
+        height: 40px;
+        width: auto;
+      }
+      
+      
+      /* Main Container */
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 15px;
+        background-color: white;
+        min-height: calc(100vh - 120px);
+      }
+      
+      h1 {
+        font-size: 34px;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 20px;
+        border: none;
+      }
+      
+      .subtitle {
+        font-size: 18px;
+        color: #555;
+        margin-bottom: 30px;
+      }
+      
+      /* Services Grid - Canada.ca style */
+      .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+      }
+      
+      .service-card {
+        background: white;
+        padding: 0;
+      }
+      
+      .service-card h2 {
+        font-size: 19px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: #333;
+      }
+      
+      .service-card p {
+        font-size: 16px;
+        color: #555;
+        line-height: 1.6;
+      }
+      
+      /* Input Section - Canada.ca form style */
+      .input-section {
+        background: white;
+        border: 2px solid #26374a;
+        padding: 30px;
+        margin: 30px 0;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #333;
+        font-size: 18px;
+      }
+      
+      input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ccc;
+        font-size: 16px;
+        font-family: inherit;
+        transition: border-color 0.2s;
+      }
+      
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #26374a;
+        box-shadow: 0 0 0 4px rgba(38, 55, 74, 0.1);
+      }
+      
+      /* Canada.ca Button Style */
+      .btn-primary {
+        background-color: #26374a;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        font-family: inherit;
+      }
+      
+      .btn-primary:hover:not(:disabled) {
+        background-color: #1c578a;
+      }
+      
+      .btn-primary:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      
+      .btn-secondary {
+        background: white;
+        color: #26374a;
+        border: 2px solid #26374a;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+        margin-top: 20px;
+        display: inline-block;
+      }
+      
+      .btn-secondary:hover {
+        background-color: #efefef;
+      }
+      
+      /* Output Section */
+      .output-section {
+        background-color: #FFFFFF;
+        border: 1px solid #ddd;
+        border-left: 4px solid #26374a;
+        padding: 20px;
+        margin-top: 20px;
+      }
+      
+      .output-section h3 {
+        font-size: 22px;
+        margin-bottom: 15px;
+        color: #333;
+      }
+      
+      .output-section a {
+        color: #295376;
+        text-decoration: underline;
+        font-weight: 500;
+      }
+      
+      .output-section a:hover {
+        color: #0535d2;
+      }
+      
+      .output-section ul {
+        list-style: none;
+        margin-left: 0;
+      }
+      
+      .output-section li {
+        margin-bottom: 10px;
+        padding-left: 25px;
+        position: relative;
+      }
+      
+      .output-section li:before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: #26374a;
+        font-weight: bold;
+      }
+      
+      /* Alert Boxes */
+      .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-left: 4px solid;
+      }
+      
+      .alert-info {
+        background-color: #d7faff;
+        border-color: #269abc;
+        color: #245269;
+      }
+      
+      .alert-success {
+        background-color: #d8eeca;
+        border-color: #278400;
+        color: #2b542c;
+      }
+      
+      .alert-warning {
+        background-color: #f9f4d4;
+        border-color: #ee7100;
+        color: #66512c;
+      }
+      
+      .alert-danger {
+        background-color: #f3e9e8;
+        border-color: #d3080c;
+        color: #721c24;
+      }
+      
+      /* Spinner */
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        border-top-color: #26374a;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      /* Footer */
+      .footer {
+        background-color: #FFFFFF;
+        border-top: 4px solid #26374a;
+        padding: 20px 15px;
+        margin-top: 40px;
+        text-align: center;
+        color: #555;
+        font-size: 14px;
+      }
+      
+      /* Responsive */
+      @media (max-width: 768px) {
+        h1 { font-size: 28px; }
+        .services-grid { grid-template-columns: 1fr; }
+        .flag-img { width: 35px; }
+        .logo-text { flex-direction: column; gap: 5px; }
+        .logo-line { font-size: 14px; }
+      }
     </style>
   </head>
   <body>
-    <h1>WCAG 2.1 Quick Scan</h1>
-    <div class="row">
-      <input id="u" placeholder="https://example.com" />
-      <button id="go">Run assessment</button>
-    </div>
-    <pre id="out">Enter a URL and click "Run assessment".</pre>
+    <!-- Header - Canada.ca style -->
+    <header class="header">
+      <div class="header-container">
+        <a href="#" class="logo">
+          <img src="sig-blk-en.svg" alt="Government of Canada / Gouvernement du Canada" class="flag-img" />
+        </a>
+      </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main-container">
+      <h1>WCAG 2.1 Accessibility Assessment</h1>
+      <p class="subtitle">Comprehensive accessibility testing for your website using Playwright and axe-core</p>
+      
+      <!-- Input Section -->
+      <section class="input-section">
+        <div class="form-group">
+          <label for="u">Website URL to test</label>
+          <input type="text" id="u" placeholder="https://example.com" aria-describedby="url-help" />
+          <small id="url-help" style="display: block; margin-top: 5px; color: #555;">
+            Enter the full URL including https:// or http://
+          </small>
+        </div>
+        <button id="go" class="btn-primary">Run accessibility assessment</button>
+      </section>
+      
+      <!-- Output Section -->
+      <section id="out-section" style="display: none;">
+        <div id="out" class="output-section"></div>
+      </section>
+      
+      <!-- Information About the Tool -->
+      <section style="margin-top: 40px;">
+        <h2 style="font-size: 26px; margin-bottom: 20px; color: #333;">What this tool tests</h2>
+        
+        <div class="services-grid">
+          <div class="service-card">
+            <h2>Perceivable</h2>
+            <p>Text alternatives, captions, color contrast, text spacing, and adaptable content</p>
+          </div>
+          
+          <div class="service-card">
+            <h2>Operable</h2>
+            <p>Keyboard access, timing controls, navigation, focus management, and input modalities</p>
+          </div>
+          
+          <div class="service-card">
+            <h2>Understandable</h2>
+            <p>Readable text, predictable functionality, form labels, and error assistance</p>
+          </div>
+          
+          <div class="service-card">
+            <h2>Robust</h2>
+            <p>Compatible markup, valid HTML, ARIA attributes, and proper semantic structure</p>
+          </div>
+          
+          <div class="service-card">
+            <h2>Automated Tests</h2>
+            <p>Color contrast, alt text, ARIA roles, heading hierarchy, form labels, skip links</p>
+          </div>
+          
+          <div class="service-card">
+            <h2>Reports Generated</h2>
+            <p>HTML reports, Excel spreadsheets, JSON data, screenshots, and accessibility tree analysis</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Powered by Playwright + axe-core | WCAG 2.1 Level A & AA Compliance Testing</p>
+    </footer>
+    
     <script>
       const u = document.getElementById('u');
       const go = document.getElementById('go');
       const out = document.getElementById('out');
+      const outSection = document.getElementById('out-section');
       
       go.onclick = async () => {
         let url = (u.value || '').trim();
-        if (!url) { 
-          out.textContent = 'Please enter a URL'; 
+        if (!url) {
+          outSection.style.display = 'block';
+          out.innerHTML = `
+            <div class="alert alert-warning">
+              <strong>Warning:</strong> Please enter a valid URL to test.
+            </div>
+          `;
           return; 
         }
         
         go.disabled = true;
-        out.textContent = 'Running Playwright tests... this may take 1-2 minutes.\nWatch the server console for progress.';
+        go.innerHTML = '<span class="spinner"></span>Running assessment...';
+        outSection.style.display = 'block';
+        
+        out.innerHTML = `
+          <div class="alert alert-info">
+            <strong><span class="spinner"></span>Test in progress</strong>
+            <p style="margin-top: 10px;">Running comprehensive accessibility tests... this may take 1-2 minutes.</p>
+            <p style="margin-top: 10px;">The framework is testing:</p>
+            <ul style="list-style: disc; margin-left: 30px; margin-top: 5px;">
+              <li>Color contrast & text alternatives</li>
+              <li>Keyboard navigation & focus management</li>
+              <li>ARIA roles & semantic HTML structure</li>
+              <li>Responsive design & text spacing</li>
+              <li>WCAG 2.1 & 2.2 criteria compliance</li>
+            </ul>
+            <p style="margin-top: 10px;"><em>Watch the server console for detailed progress.</em></p>
+          </div>
+        `;
         
         try {
           const r = await fetch('/run', { 
@@ -48,22 +411,62 @@
           const j = await r.json();
           
           if (r.ok && j.ok) {
-            out.innerHTML = `✅ Scan complete!\n\n` +
-              `📊 <a href="${j.report}" target="_blank">Open Playwright HTML Report</a>\n` +
-              `📋 <a href="${j.wcagReports}" target="_blank">View WCAG Reports (per browser)</a>\n\n` +
-              `Per-browser WCAG summaries:\n` +
-              `- <a href="${j.wcagReports}chromium/wcag-comprehensive-report-chromium.html" target="_blank">Chromium</a>\n` +
-              `- <a href="${j.wcagReports}firefox/wcag-comprehensive-report-firefox.html" target="_blank">Firefox</a>\n` +
-              `- <a href="${j.wcagReports}webkit/wcag-comprehensive-report-webkit.html" target="_blank">WebKit</a>`;
+            out.innerHTML = `
+              <div class="alert alert-success">
+                <strong>✓ Assessment Complete!</strong>
+                <p style="margin-top: 10px;">All WCAG 2.1 criteria have been tested successfully.</p>
+              </div>
+              
+              <h3>Generated Reports</h3>
+              
+              <div style="margin-bottom: 25px;">
+                <h4 style="font-size: 18px; margin-bottom: 12px; color: #333;">Main Reports</h4>
+                <ul>
+                  <li><a href="${j.report}" target="_blank">Playwright HTML Report</a></li>
+                  <li><a href="${j.wcagReports}" target="_blank">WCAG Reports Directory</a></li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 style="font-size: 18px; margin-bottom: 12px; color: #333;">Browser-Specific WCAG Reports</h4>
+                <ul>
+                  <li><a href="${j.wcagReports}chromium/wcag-comprehensive-report-chromium.html" target="_blank">Chromium (Chrome) Report</a></li>
+                </ul>
+              </div>
+            `;
           } else {
-            out.textContent = `❌ Run failed:\n${j.error || r.statusText}\n\nCheck the server console for details.`;
+            out.innerHTML = `
+              <div class="alert alert-danger">
+                <strong>✗ Assessment Failed</strong>
+                <p style="margin-top: 10px;">The test could not be completed. Error details:</p>
+                <pre style="background: white; padding: 10px; margin-top: 10px; border: 1px solid #ccc; overflow-x: auto;">${j.error || r.statusText}</pre>
+                <p style="margin-top: 10px;"><em>Check the server console for detailed error information.</em></p>
+              </div>
+            `;
           }
         } catch (e) {
-          out.textContent = `❌ Request failed:\n${e?.message || e}`;
+          out.innerHTML = `
+            <div class="alert alert-danger">
+              <strong>✗ Request Failed</strong>
+              <p style="margin-top: 10px;">Could not connect to the server:</p>
+              <pre style="background: white; padding: 10px; margin-top: 10px; border: 1px solid #ccc; overflow-x: auto;">${e?.message || e}</pre>
+            </div>
+          `;
         } finally {
           go.disabled = false;
+          go.innerHTML = 'Run accessibility assessment';
         }
       };
+      
+      // Allow Enter key to submit
+      u.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') go.click();
+      });
+      
+      // Add focus to input on page load
+      window.addEventListener('DOMContentLoaded', () => {
+        u.focus();
+      });
     </script>
   </body>
 </html>

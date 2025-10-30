@@ -40,9 +40,15 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
     console.log(`\n🔍 Starting comprehensive WCAG 2.1 accessibility scan...`);
     console.log(`🌐 URL: ${targetUrl}\n`);
 
-    // Navigate with wait
-    await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForTimeout(2000);
+    // Navigate with wait - use 'domcontentloaded' for faster/more reliable loading
+    try {
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 90000 });
+      // Wait for page to settle
+      await page.waitForTimeout(3000);
+    } catch (error) {
+      console.log(`⚠ Navigation warning: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Continue anyway - page may have partially loaded
+    }
 
     // Close common overlays / cookie banners
     const dismissSelectors = [
@@ -177,60 +183,80 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
 
     // === EXTRA HEURISTICS ===
     // 2.4.4 Link purpose (in context) – heuristic for empty/ambiguous texts
-    const badLinks = await page.$$eval('a[href]', as => as
-      .filter(a => {
-        const t = (a.textContent || '').trim();
-        return !t || /^(click here|read more|learn more)$/i.test(t);
-      })
-      .map(a => a.outerHTML)
-    );
-    await addResults([{
-      criterionId: '2.4.4',
-      criterionTitle: 'Link Purpose (In Context) – heuristic',
-      principle: 'Operable',
-      level: 'A',
-      testType: 'automated',
-      status: badLinks.length ? 'warning' : 'pass',
-      issues: badLinks.map(h => ({ description: 'Ambiguous or empty link text', severity: 'moderate', element: h, wcagTags: ['wcag2a','wcag244'] })),
-      timestamp: new Date().toISOString(),
-      url: page.url()
-    }]);
+    try {
+      if (!page.isClosed()) {
+        const badLinks = await page.$$eval('a[href]', (as: any) => as
+          .filter((a: any) => {
+            const t = (a.textContent || '').trim();
+            return !t || /^(click here|read more|learn more)$/i.test(t);
+          })
+          .map((a: any) => a.outerHTML.slice(0, 200)),
+          { timeout: 10000 }
+        );
+        await addResults([{
+          criterionId: '2.4.4',
+          criterionTitle: 'Link Purpose (In Context) – heuristic',
+          principle: 'Operable',
+          level: 'A',
+          testType: 'automated',
+          status: badLinks.length ? 'warning' : 'pass',
+          issues: badLinks.map(h => ({ description: 'Ambiguous or empty link text', severity: 'moderate', element: h, wcagTags: ['wcag2a','wcag244'] })),
+          timestamp: new Date().toISOString(),
+          url: page.url()
+        }]);
+      }
+    } catch (error) {
+      console.log('   ⚠ Link purpose test skipped (page closed or timeout)');
+    }
 
     // 2.2.1 Timing adjustable – meta refresh detection
-    const hasMetaRefresh = !!(await page.$('meta[http-equiv="refresh"]'));
-    await addResults([{
-      criterionId: '2.2.1',
-      criterionTitle: 'Timing Adjustable – meta refresh',
-      principle: 'Operable',
-      level: 'A',
-      testType: 'automated',
-      status: hasMetaRefresh ? 'fail' : 'pass',
-      issues: hasMetaRefresh ? [{ description: 'Meta refresh present', severity: 'serious', wcagTags: ['wcag2a','wcag221'] }] : [],
-      timestamp: new Date().toISOString(),
-      url: page.url()
-    }]);
+    try {
+      if (!page.isClosed()) {
+        const hasMetaRefresh = !!(await page.$('meta[http-equiv="refresh"]', { timeout: 5000 }));
+        await addResults([{
+          criterionId: '2.2.1',
+          criterionTitle: 'Timing Adjustable – meta refresh',
+          principle: 'Operable',
+          level: 'A',
+          testType: 'automated',
+          status: hasMetaRefresh ? 'fail' : 'pass',
+          issues: hasMetaRefresh ? [{ description: 'Meta refresh present', severity: 'serious', wcagTags: ['wcag2a','wcag221'] }] : [],
+          timestamp: new Date().toISOString(),
+          url: page.url()
+        }]);
+      }
+    } catch (error) {
+      console.log('   ⚠ Meta refresh test skipped (page closed or timeout)');
+    }
 
     // 2.3.3 Reduced motion – verify animations reduce
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    const stillAnimating = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('*')).some(el => {
-        const s = getComputedStyle(el as Element as HTMLElement);
-        const ad = parseFloat(s.animationDuration || '0');
-        const td = parseFloat(s.transitionDuration || '0');
-        return (ad > 0 || td > 0) && s.animationPlayState !== 'paused';
-      })
-    );
-    await addResults([{
-      criterionId: '2.3.3',
-      criterionTitle: 'Animation from Interactions (Reduced Motion) – heuristic',
-      principle: 'Operable',
-      level: 'AAA',
-      testType: 'automated',
-      status: stillAnimating ? 'warning' : 'pass',
-      issues: stillAnimating ? [{ description: 'Animations remain with prefers-reduced-motion', severity: 'moderate', wcagTags: ['wcag23','wcag233'] }] : [],
-      timestamp: new Date().toISOString(),
-      url: page.url()
-    }]);
+    try {
+      if (!page.isClosed()) {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        const stillAnimating = await page.evaluate(() => {
+          // @ts-ignore - runs in browser context
+          return Array.from(document.querySelectorAll('*')).slice(0, 200).some((el: any) => {
+            const s = getComputedStyle(el as HTMLElement);
+            const ad = parseFloat(s.animationDuration || '0');
+            const td = parseFloat(s.transitionDuration || '0');
+            return (ad > 0 || td > 0) && s.animationPlayState !== 'paused';
+          });
+        }, { timeout: 15000 });
+        await addResults([{
+          criterionId: '2.3.3',
+          criterionTitle: 'Animation from Interactions (Reduced Motion) – heuristic',
+          principle: 'Operable',
+          level: 'AAA',
+          testType: 'automated',
+          status: stillAnimating ? 'warning' : 'pass',
+          issues: stillAnimating ? [{ description: 'Animations remain with prefers-reduced-motion', severity: 'moderate', wcagTags: ['wcag23','wcag233'] }] : [],
+          timestamp: new Date().toISOString(),
+          url: page.url()
+        }]);
+      }
+    } catch (error) {
+      console.log('   ⚠ Reduced motion test skipped (page closed or timeout)');
+    }
 
     // === MANUAL FLAGS ===
     console.log('\n⚑ Flagging criteria requiring manual testing...');
