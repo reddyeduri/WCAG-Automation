@@ -8,6 +8,7 @@ import { AccessibilityTreeHelper } from '../utils/accessibilityTreeHelper';
 import { ManualTestFlags } from '../utils/manualTestFlags';
 import { ComprehensiveReportGenerator } from '../utils/comprehensiveReportGenerator';
 import { ResponsiveHelper } from '../utils/responsiveHelper';
+import { WCAG22Helper } from '../utils/wcag22Helper';
 import type { TestResult } from '../utils/reportGenerator';
 
 /**
@@ -137,6 +138,81 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
     const textSpacing = await ResponsiveHelper.testTextSpacing(page);
     await addResults([textSpacing]);
     console.log(`   • ${textSpacing.criterionId} ${textSpacing.criterionTitle}: ${textSpacing.status}`);
+
+    // === WCAG 2.2 ENHANCEMENTS ===
+    console.log('\n🧭 Testing WCAG 2.2 enhancements...');
+    const targetSize = await WCAG22Helper.testTargetSize(page);
+    await addResults([targetSize]);
+    console.log(`   • ${targetSize.criterionId} ${targetSize.criterionTitle}: ${targetSize.status}`);
+
+    const focusObscured = await WCAG22Helper.testFocusNotObscured(page);
+    await addResults([focusObscured]);
+    console.log(`   • ${focusObscured.criterionId} ${focusObscured.criterionTitle}: ${focusObscured.status}`);
+
+    const focusAppearance = await WCAG22Helper.testFocusAppearanceHeuristic(page);
+    await addResults([focusAppearance]);
+    console.log(`   • ${focusAppearance.criterionId} ${focusAppearance.criterionTitle}: ${focusAppearance.status}`);
+
+    const pointerCancel = await WCAG22Helper.testPointerCancellation(page);
+    await addResults([pointerCancel]);
+    console.log(`   • ${pointerCancel.criterionId} ${pointerCancel.criterionTitle}: ${pointerCancel.status}`);
+
+    // === EXTRA HEURISTICS ===
+    // 2.4.4 Link purpose (in context) – heuristic for empty/ambiguous texts
+    const badLinks = await page.$$eval('a[href]', as => as
+      .filter(a => {
+        const t = (a.textContent || '').trim();
+        return !t || /^(click here|read more|learn more)$/i.test(t);
+      })
+      .map(a => a.outerHTML)
+    );
+    await addResults([{
+      criterionId: '2.4.4',
+      criterionTitle: 'Link Purpose (In Context) – heuristic',
+      principle: 'Operable',
+      level: 'A',
+      testType: 'automated',
+      status: badLinks.length ? 'warning' : 'pass',
+      issues: badLinks.map(h => ({ description: 'Ambiguous or empty link text', severity: 'moderate', element: h, wcagTags: ['wcag2a','wcag244'] })),
+      timestamp: new Date().toISOString(),
+      url: page.url()
+    }]);
+
+    // 2.2.1 Timing adjustable – meta refresh detection
+    const hasMetaRefresh = !!(await page.$('meta[http-equiv="refresh"]'));
+    await addResults([{
+      criterionId: '2.2.1',
+      criterionTitle: 'Timing Adjustable – meta refresh',
+      principle: 'Operable',
+      level: 'A',
+      testType: 'automated',
+      status: hasMetaRefresh ? 'fail' : 'pass',
+      issues: hasMetaRefresh ? [{ description: 'Meta refresh present', severity: 'serious', wcagTags: ['wcag2a','wcag221'] }] : [],
+      timestamp: new Date().toISOString(),
+      url: page.url()
+    }]);
+
+    // 2.3.3 Reduced motion – verify animations reduce
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const stillAnimating = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('*')).some(el => {
+        const s = getComputedStyle(el as Element as HTMLElement);
+        const ad = parseFloat(s.animationDuration || '0');
+        const td = parseFloat(s.transitionDuration || '0');
+        return (ad > 0 || td > 0) && s.animationPlayState !== 'paused';
+      })
+    );
+    await addResults([{
+      criterionId: '2.3.3',
+      criterionTitle: 'Animation from Interactions (Reduced Motion) – heuristic',
+      principle: 'Operable',
+      level: 'AAA',
+      testType: 'automated',
+      status: stillAnimating ? 'warning' : 'pass',
+      issues: stillAnimating ? [{ description: 'Animations remain with prefers-reduced-motion', severity: 'moderate', wcagTags: ['wcag23','wcag233'] }] : [],
+      timestamp: new Date().toISOString(),
+      url: page.url()
+    }]);
 
     // === MANUAL FLAGS ===
     console.log('\n⚑ Flagging criteria requiring manual testing...');
