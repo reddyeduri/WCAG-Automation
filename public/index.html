@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>WCAG Quick Scan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: Segoe UI, Arial, sans-serif; margin: 24px; background: #f9fafb; }
+      h1 { margin-bottom: 1rem; }
+      .row { margin-bottom: 12px; }
+      input { width: 420px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+      button { padding: 10px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+      button:hover { background: #1d4ed8; }
+      button:disabled { background: #94a3b8; cursor: not-allowed; }
+      pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow: auto; max-height: 400px; }
+      a { color: #2563eb; }
+    </style>
+  </head>
+  <body>
+    <h1>WCAG 2.1 Quick Scan</h1>
+    <div class="row">
+      <input id="u" placeholder="https://example.com" />
+      <button id="go">Run assessment</button>
+    </div>
+    <pre id="out">Enter a URL and click "Run assessment".</pre>
+    <script>
+      const u = document.getElementById('u');
+      const go = document.getElementById('go');
+      const out = document.getElementById('out');
+      
+      go.onclick = async () => {
+        let url = (u.value || '').trim();
+        if (!url) { 
+          out.textContent = 'Please enter a URL'; 
+          return; 
+        }
+        
+        go.disabled = true;
+        out.textContent = 'Running Playwright tests... this may take 1-2 minutes.\nWatch the server console for progress.';
+        
+        try {
+          const r = await fetch('/run', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ url }) 
+          });
+          
+          const j = await r.json();
+          
+          if (r.ok && j.ok) {
+            out.innerHTML = `✅ Scan complete!\n\n` +
+              `📊 <a href="${j.report}" target="_blank">Open Playwright HTML Report</a>\n` +
+              `📋 <a href="${j.wcagReports}" target="_blank">View WCAG Reports (per browser)</a>\n\n` +
+              `Per-browser WCAG summaries:\n` +
+              `- <a href="${j.wcagReports}chromium/wcag-comprehensive-report-chromium.html" target="_blank">Chromium</a>\n` +
+              `- <a href="${j.wcagReports}firefox/wcag-comprehensive-report-firefox.html" target="_blank">Firefox</a>\n` +
+              `- <a href="${j.wcagReports}webkit/wcag-comprehensive-report-webkit.html" target="_blank">WebKit</a>`;
+          } else {
+            out.textContent = `❌ Run failed:\n${j.error || r.statusText}\n\nCheck the server console for details.`;
+          }
+        } catch (e) {
+          out.textContent = `❌ Request failed:\n${e?.message || e}`;
+        } finally {
+          go.disabled = false;
+        }
+      };
+    </script>
+  </body>
+</html>
