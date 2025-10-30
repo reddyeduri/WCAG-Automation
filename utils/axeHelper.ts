@@ -299,6 +299,41 @@ export class AxeHelper {
     };
   }
 
+  /**
+   * Test non-text contrast (1.4.11)
+   */
+  static async testNonTextContrast(page: Page): Promise<TestResult> {
+    let analyzed: any = { violations: [] };
+    try {
+      analyzed = await new AxeBuilder({ page })
+        .withTags(['wcag2aa'])
+        .analyze();
+    } catch {}
+
+    const v1411 = (analyzed.violations || []).filter((v: any) => (v.tags || []).includes('wcag1411'));
+
+    return {
+      criterionId: '1.4.11',
+      criterionTitle: 'Non-text Contrast',
+      principle: 'Perceivable',
+      level: 'AA',
+      testType: 'automated',
+      status: v1411.length ? 'fail' : 'warning',
+      issues: v1411.flatMap((v: any) => 
+        v.nodes.map((node: any) => ({
+          description: v.description,
+          severity: this.mapSeverity(v.impact),
+          element: node.html,
+          help: v.help,
+          helpUrl: v.helpUrl,
+          wcagTags: v.tags
+        }))
+      ),
+      timestamp: new Date().toISOString(),
+      url: page.url()
+    };
+  }
+
   private static mapViolationsToCriteria(violations: any[]): Record<string, any[]> {
     const criteriaMap: Record<string, any[]> = {};
 

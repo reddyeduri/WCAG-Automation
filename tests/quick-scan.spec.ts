@@ -9,6 +9,7 @@ import { ManualTestFlags } from '../utils/manualTestFlags';
 import { ComprehensiveReportGenerator } from '../utils/comprehensiveReportGenerator';
 import { ResponsiveHelper } from '../utils/responsiveHelper';
 import { WCAG22Helper } from '../utils/wcag22Helper';
+import { WCAGAdvancedHelper } from '../utils/wcagAdvancedHelper';
 import type { TestResult } from '../utils/reportGenerator';
 
 /**
@@ -156,6 +157,23 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
     const pointerCancel = await WCAG22Helper.testPointerCancellation(page);
     await addResults([pointerCancel]);
     console.log(`   • ${pointerCancel.criterionId} ${pointerCancel.criterionTitle}: ${pointerCancel.status}`);
+
+    console.log('\n🧪 Testing advanced heuristics...');
+    const dragFallback = await WCAGAdvancedHelper.testDraggingFallback(page);
+    await addResults([dragFallback]);
+    console.log(`   • ${dragFallback.criterionId} ${dragFallback.criterionTitle}: ${dragFallback.status}`);
+
+    const consistentHelp = await WCAGAdvancedHelper.testConsistentHelp(page);
+    await addResults([consistentHelp]);
+    console.log(`   • ${consistentHelp.criterionId} ${consistentHelp.criterionTitle}: ${consistentHelp.status}`);
+
+    const accessibleAuth = await WCAGAdvancedHelper.testAccessibleAuth(page);
+    await addResults([accessibleAuth]);
+    console.log(`   • ${accessibleAuth.criterionId} ${accessibleAuth.criterionTitle}: ${accessibleAuth.status}`);
+
+    const nonTextContrast = await AxeHelper.testNonTextContrast(page);
+    await addResults([nonTextContrast]);
+    console.log(`   • ${nonTextContrast.criterionId} ${nonTextContrast.criterionTitle}: ${nonTextContrast.status}`);
 
     // === EXTRA HEURISTICS ===
     // 2.4.4 Link purpose (in context) – heuristic for empty/ambiguous texts
