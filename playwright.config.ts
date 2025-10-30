@@ -6,7 +6,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  timeout: 120_000, // 2 minutes for comprehensive WCAG scans
+  timeout: 600_000, // 10 minutes for comprehensive WCAG scans with full features
   
   reporter: [
     ['html'],

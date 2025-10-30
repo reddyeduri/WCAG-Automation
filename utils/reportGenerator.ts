@@ -32,12 +32,16 @@ export interface Issue {
 export class ReportGenerator {
   private results: TestResult[] = [];
   private outputDir: string;
+  private scorer: any; // Will be imported later
 
   constructor(outputDir: string = './reports') {
     this.outputDir = outputDir;
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
+    // Import scorer dynamically to avoid circular dependencies
+    const { AccessibilityScorer } = require('./accessibilityScorer');
+    this.scorer = new AccessibilityScorer();
   }
 
   addResult(result: TestResult): void {

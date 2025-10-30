@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TestResult } from './reportGenerator';
+import { AccessibilityScorer } from './accessibilityScorer';
 
 /**
  * Comprehensive WCAG Report Generator
@@ -24,6 +25,7 @@ interface WCAGCriterionStatus {
 export class ComprehensiveReportGenerator {
   private testResults: TestResult[] = [];
   private outputDir: string;
+  private scorer: AccessibilityScorer;
 
   // Complete WCAG 2.1 criteria from your list
   private allWCAGCriteria = [
@@ -116,6 +118,7 @@ export class ComprehensiveReportGenerator {
 
   constructor(outputDir: string = './reports') {
     this.outputDir = outputDir;
+    this.scorer = new AccessibilityScorer();
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -387,6 +390,11 @@ export class ComprehensiveReportGenerator {
     const filePath = path.join(this.outputDir, filename);
     const criteriaStatus = this.buildCriteriaStatus();
 
+    // Calculate accessibility score
+    const scoreData = this.scorer.calculateScore(this.testResults);
+    const scoreBadge = this.scorer.generateScoreBadge(scoreData);
+    const recommendations = this.scorer.getRecommendations(scoreData);
+
     const summary = this.generateExecutiveSummary(criteriaStatus);
 
     const statusColours: Record<WCAGCriterionStatus['status'], string> = {
@@ -405,10 +413,10 @@ export class ComprehensiveReportGenerator {
     <title>WCAG 2.1 Comprehensive Report</title>
     <style>
       body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f5f5; }
-      h1 { color: #1a237e; }
+      h1 { color: #26374a; }
       table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; }
       th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; text-align: left; }
-      th { background: #1a237e; color: #fff; position: sticky; top: 0; }
+      th { background: #26374a; color: #fff; position: sticky; top: 0; }
       tr:nth-child(even) { background: #fafafa; }
       .status { font-weight: 600; color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block; }
       .pass { background: #2e7d32; }
@@ -420,13 +428,26 @@ export class ComprehensiveReportGenerator {
       .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem; }
       .summary-item { background: #e8eaf6; border-radius: 6px; padding: 0.75rem 1rem; }
       .summary-title { font-size: 0.85rem; color: #283593; text-transform: uppercase; letter-spacing: 0.08em; }
-      .summary-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.35rem; color: #1a237e; }
+      .summary-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.35rem; color: #26374a; }
       .level-section { margin-top: 2.5rem; }
     </style>
   </head>
   <body>
     <h1>WCAG 2.1 Comprehensive Accessibility Assessment</h1>
+    
+    ${scoreBadge}
+    
+    ${recommendations.length > 0 ? `
+    <div class="summary-card" style="background: #fff3e0; border-left: 4px solid #ff6f00;">
+      <h3 style="margin-top: 0; color: #e65100;">📋 Recommendations</h3>
+      <ul style="margin: 0; padding-left: 1.5rem;">
+        ${recommendations.map(rec => `<li style="margin: 0.5rem 0;">${this.escapeHtml(rec)}</li>`).join('')}
+      </ul>
+    </div>
+    ` : ''}
+
     <div class="summary-card">
+      <h3 style="margin-top: 0;">Executive Summary</h3>
       <p><strong>Generated:</strong> ${this.escapeHtml(summary['Generated At'])}</p>
       <div class="summary-grid">
         <div class="summary-item"><div class="summary-title">Total Criteria</div><div class="summary-value">${summary['Total WCAG 2.1 Criteria']}</div></div>
@@ -465,6 +486,9 @@ export class ComprehensiveReportGenerator {
               c.status === 'Manual Required' ? 'manual' : 'not-tested';
             const statusText = this.escapeHtml(c.status);
             const colourStyle = statusColours[c.status] ? `style=\"background:${statusColours[c.status]};\"` : '';
+            const notesHtml = c.detailPage && c.issuesCount > 0
+              ? `${this.escapeHtml(c.notes)} - <a href="${c.detailPage}" target="_blank" style="color: #1976d2; text-decoration: underline;">View details</a>`
+              : this.escapeHtml(c.notes);
             return `<tr>
               <td>${this.escapeHtml(c.id)}</td>
               <td>${this.escapeHtml(c.principle)}</td>
@@ -474,7 +498,7 @@ export class ComprehensiveReportGenerator {
               <td><span class="status ${statusClass}" ${colourStyle}>${statusText}</span></td>
               <td>${c.issuesCount}</td>
               <td>${this.escapeHtml(c.testType)}</td>
-              <td>${this.escapeHtml(c.notes)}</td>
+              <td>${notesHtml}</td>
             </tr>`;
           }).join('\n')}
         </tbody>
@@ -523,7 +547,7 @@ export class ComprehensiveReportGenerator {
         break;
       case 'fail':
         status = 'Fail';
-        notes = `✗ ${testResult.issues.length} issue(s) found${testResult.detailPage ? ' - View details' : ''}`;
+        notes = `✗ ${testResult.issues.length} issue(s) found`;
         break;
       case 'warning':
         status = 'Warning';
@@ -637,6 +661,17 @@ export class ComprehensiveReportGenerator {
     }
 
     console.log('\n');
+  }
+
+  private escapeHtml(text: string): string {
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
   }
 }
 

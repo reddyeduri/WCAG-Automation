@@ -24,6 +24,7 @@ export { ContentAnalysisHelper } from './contentAnalysisHelper';
 export { ExcelParser } from './excelParser';
 export { ReportGenerator } from './reportGenerator';
 export { ComprehensiveReportGenerator } from './comprehensiveReportGenerator';
+export { AccessibilityScorer } from './accessibilityScorer';
 
 // Types
 export type { 
@@ -47,4 +48,8 @@ export type {
 export type { 
   AxeTestConfig 
 } from './axeHelper';
+
+export type { 
+  AccessibilityScore 
+} from './accessibilityScorer';
 

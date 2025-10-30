@@ -270,7 +270,7 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
     const excelName = `wcag-comprehensive-report-${projectName}.xlsx`;
     const htmlName = `wcag-comprehensive-report-${projectName}.html`;
     const excelPath = path.resolve(reportGen.generateComprehensiveReport(excelName));
-    const htmlPath = path.resolve(reportGen.generateComprehensiveHtml(htmlName));
+    const htmlPath = path.resolve(reportGen.generateComprehensiveHtmlReport(htmlName));
 
     reportGen.printConsoleSummary();
 
@@ -317,10 +317,20 @@ async function enrichResultWithArtifacts(page: Page, result: TestResult, artifac
   const screenshotFile = `${slug}-page.png`;
   const screenshotPath = path.join(artifactDir, screenshotFile);
 
-  try {
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-  } catch (error) {
-    console.warn(`⚠️  Unable to capture screenshot for ${result.criterionId}:`, (error as Error).message);
+  // Only attempt screenshot if page is still open
+  if (!page.isClosed()) {
+    try {
+      await page.screenshot({ 
+        path: screenshotPath, 
+        fullPage: true, // Full page screenshot for comprehensive results
+        timeout: 60000, // 60 seconds max for full page screenshot
+        animations: 'disabled' // Disable animations for faster screenshots
+      });
+    } catch (error) {
+      console.warn(`⚠️  Unable to capture screenshot for ${result.criterionId}:`, (error as Error).message);
+    }
+  } else {
+    console.warn(`⚠️  Screenshot skipped for ${result.criterionId}: page was closed`);
   }
 
   const issueSections = result.issues.map((issue, index) => {

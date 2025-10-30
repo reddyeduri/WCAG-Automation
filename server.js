@@ -63,15 +63,15 @@ app.post('/run', (req, res) => {
     }
   });
 
-  // Timeout safety (3 minutes)
+  // Timeout safety (10 minutes)
   setTimeout(() => {
     if (!responded) {
       responded = true;
-      console.error('[/run] Timeout after 3 minutes');
-      res.status(500).json({ error: 'Test run timed out after 3 minutes' });
+      console.error('[/run] Timeout after 10 minutes');
+      res.status(500).json({ error: 'Test run timed out after 10 minutes' });
       try { child.kill(); } catch {}
     }
-  }, 180000);
+  }, 600000);
 });
 
 app.listen(3001, () => {
