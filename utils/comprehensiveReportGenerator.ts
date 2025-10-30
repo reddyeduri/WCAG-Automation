@@ -258,6 +258,14 @@ export class ComprehensiveReportGenerator {
     `;
     }).join('');
 
+    // Calculate summary stats
+    const passCount = criteriaStatus.filter(c => c.status === 'Pass').length;
+    const failCount = criteriaStatus.filter(c => c.status === 'Fail').length;
+    const warningCount = criteriaStatus.filter(c => c.status === 'Warning').length;
+    const manualCount = criteriaStatus.filter(c => c.status === 'Manual Required').length;
+    const notTestedCount = criteriaStatus.filter(c => c.status === 'Not Tested').length;
+    const totalCount = criteriaStatus.length;
+
     const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -267,6 +275,42 @@ export class ComprehensiveReportGenerator {
       body { font-family: "Segoe UI", Arial, sans-serif; margin: 24px; background: #f9fafb; color: #1f2933; }
       h1 { margin-bottom: 0.5rem; }
       p.meta { margin-top: 0; color: #52606d; }
+      
+      /* Summary Cards */
+      .summary-section { display: flex; gap: 16px; margin: 24px 0; flex-wrap: wrap; }
+      .summary-card { 
+        background: #fff; 
+        border-radius: 8px; 
+        padding: 20px; 
+        flex: 1; 
+        min-width: 150px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        border-left: 4px solid #cbd5e1;
+      }
+      .summary-card.pass { border-left-color: #0b8e00; }
+      .summary-card.fail { border-left-color: #d91e18; }
+      .summary-card.warning { border-left-color: #d97706; }
+      .summary-card.manual { border-left-color: #2563eb; }
+      .summary-card.not-tested { border-left-color: #64748b; }
+      
+      .summary-label { 
+        font-size: 12px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em; 
+        color: #64748b;
+        margin-bottom: 8px;
+      }
+      .summary-value { 
+        font-size: 32px; 
+        font-weight: 700; 
+        color: #1f2933;
+      }
+      .summary-percentage {
+        font-size: 14px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+      
       table { border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08); }
       th, td { border: 1px solid #e4e7eb; padding: 10px 12px; text-align: left; font-size: 14px; }
       th { background: #f1f5f9; text-transform: uppercase; font-size: 12px; letter-spacing: 0.06em; color: #364152; }
@@ -282,6 +326,36 @@ export class ComprehensiveReportGenerator {
   <body>
     <h1>WCAG 2.1 Comprehensive Report</h1>
     <p class="meta">Generated: ${new Date().toLocaleString()}</p>
+    
+    <!-- Summary Section -->
+    <div class="summary-section">
+      <div class="summary-card pass">
+        <div class="summary-label">✓ Passed</div>
+        <div class="summary-value">${passCount}</div>
+        <div class="summary-percentage">${((passCount/totalCount)*100).toFixed(1)}%</div>
+      </div>
+      <div class="summary-card fail">
+        <div class="summary-label">✗ Failed</div>
+        <div class="summary-value">${failCount}</div>
+        <div class="summary-percentage">${((failCount/totalCount)*100).toFixed(1)}%</div>
+      </div>
+      <div class="summary-card warning">
+        <div class="summary-label">⚠ Warnings</div>
+        <div class="summary-value">${warningCount}</div>
+        <div class="summary-percentage">${((warningCount/totalCount)*100).toFixed(1)}%</div>
+      </div>
+      <div class="summary-card manual">
+        <div class="summary-label">👤 Manual Review</div>
+        <div class="summary-value">${manualCount}</div>
+        <div class="summary-percentage">${((manualCount/totalCount)*100).toFixed(1)}%</div>
+      </div>
+      <div class="summary-card not-tested">
+        <div class="summary-label">— Not Tested</div>
+        <div class="summary-value">${notTestedCount}</div>
+        <div class="summary-percentage">${((notTestedCount/totalCount)*100).toFixed(1)}%</div>
+      </div>
+    </div>
+    
     <div class="grid">
       <table>
         <thead>
