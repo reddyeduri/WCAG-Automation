@@ -1,0 +1,39 @@
+{
+  "name": "wcag-accessibility-automation",
+  "version": "1.0.0",
+  "description": "Playwright test framework for WCAG 2.1 accessibility validation",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:wcag": "playwright test tests/wcag.spec.ts",
+    "test:excel": "playwright test tests/wcag-excel-driven.spec.ts",
+    "test:example": "playwright test examples/basic-example.spec.ts",
+    "quick-scan": "playwright test tests/quick-scan.spec.ts",
+    "build": "tsc",
+    "verify-setup": "node scripts/verify-setup.js",
+    "install:browsers": "playwright install"
+  },
+  "keywords": [
+    "accessibility",
+    "wcag",
+    "playwright",
+    "axe-core",
+    "a11y"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.9.1",
+    "axe-core": "^4.9.1",
+    "xlsx": "^0.18.5"
+  }
+}
+

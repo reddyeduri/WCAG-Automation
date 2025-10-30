@@ -1,0 +1,12 @@
+node_modules/
+dist/
+test-results/
+reports/
+playwright-report/
+*.log
+.env
+.DS_Store
+package-lock.json
+*.xlsx
+!wcag-assessment-template.xlsx
+
