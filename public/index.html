@@ -267,6 +267,184 @@
         to { transform: rotate(360deg); }
       }
       
+      /* Progress Bar */
+      .progress-container {
+        display: none;
+        margin: 20px 0;
+        background: #fff;
+        border: 2px solid #26374a;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      
+      .progress-container.active {
+        display: block;
+      }
+      
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      
+      .progress-label {
+        font-weight: 600;
+        color: #26374a;
+        font-size: 16px;
+      }
+      
+      .progress-percentage {
+        font-weight: 700;
+        color: #26374a;
+        font-size: 18px;
+      }
+      
+      .progress-bar-wrapper {
+        width: 100%;
+        height: 30px;
+        background: #e0e0e0;
+        border-radius: 15px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      
+      .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #26374a 0%, #3d5a80 50%, #26374a 100%);
+        background-size: 200% 100%;
+        border-radius: 15px;
+        transition: width 0.3s ease;
+        animation: progressShine 2s linear infinite;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+      }
+      
+      @keyframes progressShine {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      
+      .progress-status {
+        margin-top: 10px;
+        color: #555;
+        font-size: 14px;
+        min-height: 20px;
+      }
+      
+      .progress-steps {
+        margin-top: 20px;
+        padding-top: 10px;
+        padding-left: 0;
+        position: relative;
+      }
+      
+      /* Vertical timeline line */
+      .progress-steps::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 15px;
+        bottom: 15px;
+        width: 2px;
+        background: #e0e0e0;
+        z-index: 0;
+      }
+      
+      /* Completed line element (for JavaScript control) */
+      .progress-steps .completed-line {
+        position: absolute;
+        left: 15px;
+        top: 15px;
+        width: 2px;
+        background: #26374a;
+        height: 0;
+        transition: height 0.3s ease;
+        z-index: 1;
+      }
+      
+      .progress-step {
+        display: block;
+        padding: 8px 0;
+        padding-left: 40px;
+        font-size: 13px;
+        color: #666;
+        position: relative;
+        z-index: 2;
+        min-height: 32px;
+      }
+      
+      .progress-step.active {
+        color: #26374a;
+        font-weight: 600;
+      }
+      
+      .progress-step.completed {
+        color: #666;
+      }
+      
+      .progress-step-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid #ccc;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3;
+        transition: all 0.3s ease;
+      }
+      
+      .progress-step.completed .progress-step-icon {
+        border-color: #26374a;
+        background: #26374a;
+      }
+      
+      .progress-step.completed .progress-step-icon::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #fff;
+      }
+      
+      .progress-step.active .progress-step-icon {
+        border-color: #26374a;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(38, 55, 74, 0.1);
+      }
+      
+      .progress-step.active .progress-step-icon::after {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #26374a;
+      }
+      
+      .progress-step.pending .progress-step-icon {
+        border-color: #ccc;
+        background: #fff;
+      }
+      
+      .progress-step.pending .progress-step-icon::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #ccc;
+      }
+      
       /* Footer */
       .footer {
         background-color: #FFFFFF;
@@ -314,6 +492,53 @@
         </div>
         <button id="go" class="btn-primary">Run accessibility assessment</button>
       </section>
+      
+      <!-- Progress Bar -->
+      <div id="progress-container" class="progress-container">
+        <div class="progress-header">
+          <span class="progress-label">Testing in Progress</span>
+          <span class="progress-percentage" id="progress-percentage">0%</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-status" id="progress-status">Initializing test suite...</div>
+        <div class="progress-steps">
+          <div class="completed-line" id="completed-line"></div>
+          <div class="progress-step pending" data-step="init">
+            <span class="progress-step-icon"></span>
+            <span>Initializing browser and test environment</span>
+          </div>
+          <div class="progress-step pending" data-step="navigate">
+            <span class="progress-step-icon"></span>
+            <span>Loading website and analyzing page structure</span>
+          </div>
+          <div class="progress-step pending" data-step="perceivable">
+            <span class="progress-step-icon"></span>
+            <span>Testing Perceivable criteria (Alt text, contrast, spacing)</span>
+          </div>
+          <div class="progress-step pending" data-step="operable">
+            <span class="progress-step-icon"></span>
+            <span>Testing Operable criteria (Keyboard, navigation, timing)</span>
+          </div>
+          <div class="progress-step pending" data-step="understandable">
+            <span class="progress-step-icon"></span>
+            <span>Testing Understandable criteria (Labels, language, predictability)</span>
+          </div>
+          <div class="progress-step pending" data-step="robust">
+            <span class="progress-step-icon"></span>
+            <span>Testing Robust criteria (Valid HTML, ARIA)</span>
+          </div>
+          <div class="progress-step pending" data-step="wcag22">
+            <span class="progress-step-icon"></span>
+            <span>Testing WCAG 2.2 criteria (Focus, target size, help)</span>
+          </div>
+          <div class="progress-step pending" data-step="report">
+            <span class="progress-step-icon"></span>
+            <span>Generating comprehensive reports and screenshots</span>
+          </div>
+        </div>
+      </div>
       
       <!-- Output Section -->
       <section id="out-section" style="display: none;">
@@ -368,6 +593,68 @@
       const go = document.getElementById('go');
       const out = document.getElementById('out');
       const outSection = document.getElementById('out-section');
+      const progressContainer = document.getElementById('progress-container');
+      const progressBarFill = document.getElementById('progress-bar-fill');
+      const progressPercentage = document.getElementById('progress-percentage');
+      const progressStatus = document.getElementById('progress-status');
+      
+      // Progress bar simulation steps
+      const progressSteps = [
+        { step: 'init', percent: 5, duration: 500, message: 'Initializing browser and test environment...' },
+        { step: 'navigate', percent: 15, duration: 2000, message: 'Loading website and analyzing page structure...' },
+        { step: 'perceivable', percent: 30, duration: 8000, message: 'Testing Perceivable criteria (Alt text, contrast, spacing)...' },
+        { step: 'operable', percent: 50, duration: 10000, message: 'Testing Operable criteria (Keyboard, navigation, timing)...' },
+        { step: 'understandable', percent: 65, duration: 6000, message: 'Testing Understandable criteria (Labels, language, predictability)...' },
+        { step: 'robust', percent: 75, duration: 5000, message: 'Testing Robust criteria (Valid HTML, ARIA)...' },
+        { step: 'wcag22', percent: 85, duration: 8000, message: 'Testing WCAG 2.2 criteria (Focus, target size, help)...' },
+        { step: 'report', percent: 95, duration: 3000, message: 'Generating comprehensive reports and screenshots...' }
+      ];
+      
+      function updateProgress(percent, message, stepName) {
+        progressBarFill.style.width = percent + '%';
+        progressPercentage.textContent = percent + '%';
+        progressStatus.textContent = message;
+        
+        const stepsContainer = document.querySelector('.progress-steps');
+        const completedLine = document.getElementById('completed-line');
+        if (!stepsContainer) return;
+        
+        // Update step indicators
+        document.querySelectorAll('.progress-step').forEach(step => {
+          const stepAttr = step.getAttribute('data-step');
+          if (stepAttr === stepName) {
+            step.className = 'progress-step active';
+          } else {
+            // Mark previous steps as completed
+            const stepIndex = progressSteps.findIndex(s => s.step === stepAttr);
+            const currentIndex = progressSteps.findIndex(s => s.step === stepName);
+            if (stepIndex < currentIndex) {
+              step.className = 'progress-step completed';
+            }
+          }
+        });
+        
+        // Calculate completed line height based on completed steps
+        const currentIndex = progressSteps.findIndex(s => s.step === stepName);
+        const completedSteps = currentIndex; // Steps before current (completed)
+        
+        // Calculate the height of completed line
+        // Each step is roughly 40px (padding 8px top + 8px bottom + ~24px text), starting at 15px from top
+        const stepHeight = 40; // Approximate height per step
+        const lineHeight = completedSteps > 0 ? (completedSteps * stepHeight) : 0;
+        
+        // Update the completed timeline line height
+        if (completedLine) {
+          completedLine.style.height = lineHeight + 'px';
+        }
+      }
+      
+      async function simulateProgress() {
+        for (const { step, percent, duration, message } of progressSteps) {
+          updateProgress(percent, message, step);
+          await new Promise(resolve => setTimeout(resolve, duration));
+        }
+      }
       
       go.onclick = async () => {
         let url = (u.value || '').trim();
@@ -383,23 +670,27 @@
         
         go.disabled = true;
         go.innerHTML = '<span class="spinner"></span>Running assessment...';
-        outSection.style.display = 'block';
+        outSection.style.display = 'none';
         
-        out.innerHTML = `
-          <div class="alert alert-info">
-            <strong><span class="spinner"></span>Test in progress</strong>
-            <p style="margin-top: 10px;">Running comprehensive accessibility tests... this may take 1-2 minutes.</p>
-            <p style="margin-top: 10px;">The framework is testing:</p>
-            <ul style="list-style: disc; margin-left: 30px; margin-top: 5px;">
-              <li>Color contrast & text alternatives</li>
-              <li>Keyboard navigation & focus management</li>
-              <li>ARIA roles & semantic HTML structure</li>
-              <li>Responsive design & text spacing</li>
-              <li>WCAG 2.1 & 2.2 criteria compliance</li>
-            </ul>
-            <p style="margin-top: 10px;"><em>Watch the server console for detailed progress.</em></p>
-          </div>
-        `;
+        // Show and reset progress bar
+        progressContainer.classList.add('active');
+        progressBarFill.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        progressStatus.textContent = 'Initializing test suite...';
+        
+        // Reset all steps to pending
+        document.querySelectorAll('.progress-step').forEach(step => {
+          step.className = 'progress-step pending';
+        });
+        
+        // Reset completed line height
+        const completedLine = document.getElementById('completed-line');
+        if (completedLine) {
+          completedLine.style.height = '0px';
+        }
+        
+        // Start progress simulation
+        const progressPromise = simulateProgress();
         
         try {
           const r = await fetch('/run', { 
@@ -408,7 +699,31 @@
             body: JSON.stringify({ url }) 
           });
           
+          // Wait for progress simulation to complete
+          await progressPromise;
+          
+          // Set to 100% before showing results
+          updateProgress(100, 'Test completed! Preparing results...', 'report');
+          document.querySelectorAll('.progress-step').forEach(step => {
+            step.className = 'progress-step completed';
+          });
+          
+          // Extend completed line to full height
+          const completedLine = document.getElementById('completed-line');
+          if (completedLine) {
+            const totalSteps = document.querySelectorAll('.progress-step').length;
+            const lineHeight = totalSteps * 40; // Full height
+            completedLine.style.height = lineHeight + 'px';
+          }
+          
+          // Brief pause to show 100%
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const j = await r.json();
+          
+          // Hide progress bar and show results
+          progressContainer.classList.remove('active');
+          outSection.style.display = 'block';
           
           if (r.ok && j.ok) {
             out.innerHTML = `
@@ -445,6 +760,10 @@
             `;
           }
         } catch (e) {
+          // Hide progress bar on error
+          progressContainer.classList.remove('active');
+          outSection.style.display = 'block';
+          
           out.innerHTML = `
             <div class="alert alert-danger">
               <strong>✗ Request Failed</strong>

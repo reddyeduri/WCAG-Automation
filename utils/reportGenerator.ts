@@ -14,14 +14,15 @@ export interface TestResult {
   url?: string;
   /** Optional path (relative to the report directory) to a detailed issue page */
   detailPage?: string;
-  /** Optional path to a screenshot used by the detail page */
-  detailScreenshot?: string;
+  /** Optional array of screenshot filenames, one per issue with highlighted elements */
+  issueScreenshots?: string[];
 }
 
 export interface Issue {
   description: string;
   severity: 'critical' | 'serious' | 'moderate' | 'minor';
   element?: string;
+  target?: string[]; // CSS selector array from axe-core for unique element identification
   help?: string;
   helpUrl?: string;
   wcagTags?: string[];

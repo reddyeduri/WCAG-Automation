@@ -26,6 +26,7 @@ export { ExcelParser } from './excelParser';
 export { ReportGenerator } from './reportGenerator';
 export { ComprehensiveReportGenerator } from './comprehensiveReportGenerator';
 export { AccessibilityScorer } from './accessibilityScorer';
+export { generateUniqueSelector, getElementDetails } from './selectorHelper';
 
 // Types
 export type { 

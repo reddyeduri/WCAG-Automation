@@ -41,14 +41,43 @@ export class AxeHelper {
 
     for (const [criterionId, violations] of Object.entries(criteriaMap)) {
       const issues: Issue[] = violations.flatMap(violation => 
-        violation.nodes.map(node => ({
-          description: violation.description,
-          severity: this.mapSeverity(violation.impact),
-          element: node.html,
-          help: violation.help,
-          helpUrl: violation.helpUrl,
-          wcagTags: violation.tags
-        }))
+        violation.nodes.map(node => {
+          // DEBUG: Log node structure to see what axe-core provides
+          const debugInfo = {
+            criterionId,
+            hasHtml: !!node.html,
+            hasTarget: !!node.target,
+            targetType: Array.isArray(node.target) ? 'array' : typeof node.target,
+            targetValue: node.target,
+            htmlSnippet: node.html?.slice(0, 150),
+            fullNodeKeys: Object.keys(node)
+          };
+          
+          console.log('🔍 AXE NODE STRUCTURE:', JSON.stringify(debugInfo, null, 2));
+          
+          // Also write to file for easy checking
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const logPath = path.join(process.cwd(), 'axe-debug.log');
+            fs.appendFileSync(logPath, JSON.stringify(debugInfo, null, 2) + '\n---\n');
+            if (debugInfo.criterionId === '1.1.1') {
+              console.log(`📝 Debug log being written to: ${logPath}`);
+            }
+          } catch (e) {
+            console.error('❌ Could not write debug log:', e.message);
+          }
+          
+          return {
+            description: violation.description,
+            severity: this.mapSeverity(violation.impact),
+            element: node.html,
+            target: node.target, // CSS selector array to uniquely identify element
+            help: violation.help,
+            helpUrl: violation.helpUrl,
+            wcagTags: violation.tags
+          };
+        })
       );
 
       testResults.push({
@@ -89,6 +118,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -121,6 +151,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -161,6 +192,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -193,6 +225,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -225,6 +258,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -257,6 +291,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -289,6 +324,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags
@@ -324,6 +360,7 @@ export class AxeHelper {
           description: v.description,
           severity: this.mapSeverity(v.impact),
           element: node.html,
+          target: node.target, // CSS selector for unique identification
           help: v.help,
           helpUrl: v.helpUrl,
           wcagTags: v.tags

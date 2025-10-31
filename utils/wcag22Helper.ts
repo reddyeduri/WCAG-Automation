@@ -10,6 +10,33 @@ export class WCAG22Helper {
       }
 
       const results = await page.evaluate(() => {
+        // Generate a full path selector for any element
+        function getFullPathSelector(el: HTMLElement): string {
+          const path: string[] = [];
+          let current: HTMLElement | null = el;
+
+          while (current && current.nodeType === Node.ELEMENT_NODE) {
+            let selector = current.tagName.toLowerCase();
+            if (current.id) {
+              selector += `#${current.id}`;
+              path.unshift(selector);
+              break;
+            } else {
+              const parent = current.parentNode;
+              if (parent) {
+                const siblings = Array.from(parent.children).filter(child => child.tagName === current!.tagName);
+                if (siblings.length > 1) {
+                  const index = siblings.indexOf(current) + 1;
+                  selector += `:nth-of-type(${index})`;
+                }
+              }
+            }
+            path.unshift(selector);
+            current = current.parentElement;
+          }
+          return path.join(' > ');
+        }
+        
         const selectors = [
           'a[href]', 'button', 'input', 'select', 'textarea',
           '[role="button"]', '[role="link"]', '[role^="menuitem"]',
@@ -17,12 +44,17 @@ export class WCAG22Helper {
         ];
         // @ts-ignore - runs in browser context
         const nodes = Array.from(document.querySelectorAll(selectors.join(',')));
-        const offenders: { html: string; w: number; h: number }[] = [];
+        const offenders: { html: string; selector: string; w: number; h: number }[] = [];
         // Limit to first 100 elements for performance
         for (const el of nodes.slice(0, 100)) {
           const r = (el as HTMLElement).getBoundingClientRect();
           if (r.width > 0 && r.height > 0 && (r.width < 24 || r.height < 24)) {
-            offenders.push({ html: (el as HTMLElement).outerHTML.slice(0, 200), w: Math.round(r.width), h: Math.round(r.height) });
+            offenders.push({ 
+              html: (el as HTMLElement).outerHTML.slice(0, 200), 
+              selector: getFullPathSelector(el as HTMLElement),
+              w: Math.round(r.width), 
+              h: Math.round(r.height) 
+            });
           }
         }
         return offenders;
@@ -32,6 +64,7 @@ export class WCAG22Helper {
         description: `Target smaller than 24x24 px (${r.w}x${r.h})`,
         severity: 'moderate',
         element: r.html,
+        target: r.selector ? [r.selector] : undefined,
         wcagTags: ['wcag22aa', 'target-size-minimum']
       }));
 
@@ -73,11 +106,38 @@ export class WCAG22Helper {
       }
 
       const offenders = await page.evaluate(() => {
+        // Generate a full path selector for any element
+        function getFullPathSelector(el: HTMLElement): string {
+          const path: string[] = [];
+          let current: HTMLElement | null = el;
+
+          while (current && current.nodeType === Node.ELEMENT_NODE) {
+            let selector = current.tagName.toLowerCase();
+            if (current.id) {
+              selector += `#${current.id}`;
+              path.unshift(selector);
+              break;
+            } else {
+              const parent = current.parentNode;
+              if (parent) {
+                const siblings = Array.from(parent.children).filter(child => child.tagName === current!.tagName);
+                if (siblings.length > 1) {
+                  const index = siblings.indexOf(current) + 1;
+                  selector += `:nth-of-type(${index})`;
+                }
+              }
+            }
+            path.unshift(selector);
+            current = current.parentElement;
+          }
+          return path.join(' > ');
+        }
+        
         // @ts-ignore - runs in browser context
         const focusables = Array.from(document.querySelectorAll(
           'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
         )).slice(0, 15); // Reduced from 30 to 15
-        const bad: string[] = [];
+        const bad: { html: string; selector: string }[] = [];
         function isDescendant(a: Element | null, b: Element | null) { 
           return !!(a && b && (a === b || b.contains(a))); 
         }
@@ -90,7 +150,10 @@ export class WCAG22Helper {
             // @ts-ignore
             const topAtCenter = document.elementFromPoint(cx, cy);
             if (!isDescendant(el as Element, topAtCenter)) {
-              bad.push((el as HTMLElement).outerHTML.slice(0, 200));
+              bad.push({
+                html: (el as HTMLElement).outerHTML.slice(0, 200),
+                selector: getFullPathSelector(el as HTMLElement)
+              });
             }
           } catch (e) {
             // Skip elements that can't be focused
@@ -99,10 +162,11 @@ export class WCAG22Helper {
         return bad;
       }, { timeout: 30000 });
 
-      const issues: Issue[] = offenders.map(html => ({
+      const issues: Issue[] = offenders.map(item => ({
         description: 'Focused element is obscured by other UI (headers/overlays).',
         severity: 'serious',
-        element: html,
+        element: item.html,
+        target: item.selector ? [item.selector] : undefined,
         wcagTags: ['wcag22aa', 'focus-not-obscured']
       }));
 

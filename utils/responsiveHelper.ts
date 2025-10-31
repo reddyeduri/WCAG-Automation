@@ -39,12 +39,18 @@ export class ResponsiveHelper {
 
     const issues: Issue[] = [];
     if (overflow.docOverflowX || overflow.offenders.length) {
+      // Create example HTML showing problematic elements
+      const offenderExamples = overflow.offenders.length > 0
+        ? overflow.offenders.slice(0, 3).map(offender => `<${offender.split('.')[0]} class="..."> <!-- This element causes horizontal scroll --> </${offender.split('.')[0]}>`).join('\n')
+        : '<div style="width: 400px;"> <!-- Fixed width elements cause overflow at 200% zoom --> </div>';
+      
       issues.push({
         description: `Content introduces horizontal scrolling when zoomed to 200% at 320px width.` +
           (overflow.offenders.length ? ` Examples: ${overflow.offenders.join(', ')}` : ''),
         severity: 'serious',
-        element: overflow.offenders.join('\n'),
-        help: 'Ensure layouts reflow without requiring horizontal scrolling and text remains readable at 200% zoom.',
+        element: offenderExamples || '<body>\n  <!-- Page-wide issue: content does not reflow at 200% zoom -->\n</body>',
+        target: overflow.offenders.length > 0 ? [overflow.offenders[0]] : undefined,
+        help: 'Ensure layouts reflow without requiring horizontal scrolling and text remains readable at 200% zoom. This is a page-wide issue affecting layout structure.',
         wcagTags: ['wcag2aa', 'wcag1410']
       });
     }
@@ -63,11 +69,16 @@ export class ResponsiveHelper {
 
     const reflowIssues: Issue[] = [];
     if (overflow.docOverflowX) {
+      const offenderExamples = overflow.offenders.length > 0
+        ? overflow.offenders.slice(0, 3).map(offender => `<${offender.split('.')[0]} class="..."> <!-- This element causes horizontal scroll --> </${offender.split('.')[0]}>`).join('\n')
+        : '<div style="width: 400px; min-width: 400px;"> <!-- Fixed width elements prevent reflow --> </div>';
+      
       reflowIssues.push({
         description: 'Horizontal scrolling detected when viewport width is 320px and zoom is 200%.',
         severity: 'serious',
-        element: overflow.offenders.join('\n'),
-        help: 'Ensure all content fits within 320 CSS pixels without horizontal scrolling.',
+        element: offenderExamples || '<body>\n  <!-- Page-wide issue: content does not reflow at narrow viewport -->\n</body>',
+        target: overflow.offenders.length > 0 ? [overflow.offenders[0]] : undefined,
+        help: 'Ensure all content fits within 320 CSS pixels without horizontal scrolling. This is a page-wide issue affecting layout structure.',
         wcagTags: ['wcag2aa', 'wcag1410']
       });
     }
@@ -121,12 +132,17 @@ export class ResponsiveHelper {
 
     const issues: Issue[] = [];
     if (overflow.docOverflowX || overflow.docOverflowY || overflow.offenders.length) {
+      const offenderExamples = overflow.offenders.length > 0
+        ? overflow.offenders.slice(0, 3).map(offender => `<${offender.split('.')[0]} class="..."> <!-- This element breaks with text spacing --> </${offender.split('.')[0]}>`).join('\n')
+        : '<div style="line-height: 1.2; letter-spacing: normal;"> <!-- Text spacing adjustments break layout --> </div>';
+      
       issues.push({
         description: 'Layout breaks when WCAG text spacing adjustments are applied.' +
           (overflow.offenders.length ? ` Examples: ${overflow.offenders.join(', ')}` : ''),
         severity: 'serious',
-        element: overflow.offenders.join('\n'),
-        help: 'Ensure users can apply text spacing (line-height 1.5, letter-spacing 0.12em, word-spacing 0.16em) without loss of content.',
+        element: offenderExamples || '<body>\n  <!-- Page-wide issue: layout breaks with text spacing adjustments -->\n</body>',
+        target: overflow.offenders.length > 0 ? [overflow.offenders[0]] : undefined,
+        help: 'Ensure users can apply text spacing (line-height 1.5, letter-spacing 0.12em, word-spacing 0.16em) without loss of content. This is a page-wide issue affecting layout structure.',
         wcagTags: ['wcag2aa', 'wcag1412']
       });
     }

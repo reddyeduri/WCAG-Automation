@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { TestResult, Issue } from './reportGenerator';
+import { getElementDetails } from './selectorHelper';
 
 export interface FocusableElement {
   selector: string;
@@ -40,10 +41,14 @@ export class KeyboardHelper {
           }, { timeout: 2000 });
           
           if (!isFocused) {
+            // Get actual HTML and unique full-path selector
+            const elementData = await getElementDetails(locator);
+            
             issues.push({
               description: `Element is not keyboard accessible: ${element.text || element.tagName}`,
               severity: 'serious',
-              element: element.selector,
+              element: elementData.html,
+              target: [elementData.selector], // Full path selector for unique targeting
               help: 'All interactive elements must be keyboard accessible',
               wcagTags: ['wcag2a', 'wcag211']
             });
@@ -116,11 +121,41 @@ export class KeyboardHelper {
         // Check if we're trapped (same element after forward and backward tab)
         const currentElement = await page.evaluate(() => {
           // @ts-ignore
-          const active = document.activeElement;
+          const active = document.activeElement as HTMLElement;
+          
+          // Generate a full path selector for this element
+          function getFullPathSelector(el: HTMLElement): string {
+            const path: string[] = [];
+            let current: HTMLElement | null = el;
+
+            while (current && current.nodeType === Node.ELEMENT_NODE) {
+              let selector = current.tagName.toLowerCase();
+              if (current.id) {
+                selector += `#${current.id}`;
+                path.unshift(selector);
+                break;
+              } else {
+                const parent = current.parentNode;
+                if (parent) {
+                  const siblings = Array.from(parent.children).filter(child => child.tagName === current!.tagName);
+                  if (siblings.length > 1) {
+                    const index = siblings.indexOf(current) + 1;
+                    selector += `:nth-of-type(${index})`;
+                  }
+                }
+              }
+              path.unshift(selector);
+              current = current.parentElement;
+            }
+            return path.join(' > ');
+          }
+          
           return {
             tag: active?.tagName,
             id: active?.id,
-            class: active?.className
+            class: active?.className,
+            html: active?.outerHTML || '',
+            selector: active ? getFullPathSelector(active) : ''
           };
         }, { timeout: 5000 });
 
@@ -131,7 +166,8 @@ export class KeyboardHelper {
           issues.push({
             description: `Potential keyboard trap detected at element: ${currentElement.tag}`,
             severity: 'critical',
-            element: `${currentElement.tag}${currentElement.id ? `#${currentElement.id}` : ''}`,
+            element: currentElement.html || `${currentElement.tag}${currentElement.id ? `#${currentElement.id}` : ''}`,
+            target: currentElement.selector ? [currentElement.selector] : undefined,
             help: 'Users must be able to navigate away from any focused element',
             wcagTags: ['wcag2a', 'wcag212']
           });
@@ -212,10 +248,14 @@ export class KeyboardHelper {
           const hasFocusIndicator = this.checkFocusIndicator(focusStyles);
           
           if (!hasFocusIndicator) {
+            // Get actual HTML and unique full-path selector
+            const elementData = await getElementDetails(locator);
+            
             issues.push({
               description: `Element lacks visible focus indicator: ${element.text || element.tagName}`,
               severity: 'serious',
-              element: element.selector,
+              element: elementData.html,
+              target: [elementData.selector], // Full path selector for unique targeting
               help: 'Interactive elements must have a visible focus indicator',
               wcagTags: ['wcag2aa', 'wcag247']
             });
