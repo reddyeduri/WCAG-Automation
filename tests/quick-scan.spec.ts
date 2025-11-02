@@ -29,6 +29,7 @@ test.describe(`Comprehensive WCAG 2.1 Scan: ${targetUrl}`, () => {
     const projectName = testInfo.project.name.replace(/\s+/g, '-').toLowerCase();
     const reportDir = path.join('reports', 'quick-scan', projectName);
     const reportGen = new ComprehensiveReportGenerator(reportDir);
+    reportGen.setTestedUrl(targetUrl);
     const artifactsDir = path.join(reportDir, 'artifacts');
 
     const addResults = async (results: TestResult[]) => {

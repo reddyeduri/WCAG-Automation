@@ -26,6 +26,7 @@ export class ComprehensiveReportGenerator {
   private testResults: TestResult[] = [];
   private outputDir: string;
   private scorer: AccessibilityScorer;
+  private testedUrl: string = '';
 
   // Complete WCAG 2.1 criteria from your list
   private allWCAGCriteria = [
@@ -126,6 +127,10 @@ export class ComprehensiveReportGenerator {
 
   addResults(results: TestResult[]): void {
     this.testResults.push(...results);
+  }
+
+  setTestedUrl(url: string): void {
+    this.testedUrl = url;
   }
 
   /**
@@ -390,8 +395,23 @@ export class ComprehensiveReportGenerator {
     const filePath = path.join(this.outputDir, filename);
     const criteriaStatus = this.buildCriteriaStatus();
 
+    // Log debug info about test results
+    const timestamp = new Date().toISOString();
+    console.log(`\n📊 Generating comprehensive report at ${timestamp}`);
+    console.log(`   Total test results: ${this.testResults.length}`);
+    console.log(`   Total criteria: ${criteriaStatus.length}`);
+    const levelBreakdown = {
+      A: criteriaStatus.filter(c => c.level === 'A').length,
+      AA: criteriaStatus.filter(c => c.level === 'AA').length,
+      AAA: criteriaStatus.filter(c => c.level === 'AAA').length
+    };
+    console.log(`   Level breakdown: A=${levelBreakdown.A}, AA=${levelBreakdown.AA}, AAA=${levelBreakdown.AAA}`);
+
     // Calculate accessibility score
     const scoreData = this.scorer.calculateScore(this.testResults);
+    console.log(`   Score data: ${scoreData.score}/100 (Grade: ${scoreData.grade})`);
+    console.log(`   Level scores: A=${scoreData.levelScores.A.passed}/${scoreData.levelScores.A.total}, AA=${scoreData.levelScores.AA.passed}/${scoreData.levelScores.AA.total}, AAA=${scoreData.levelScores.AAA.passed}/${scoreData.levelScores.AAA.total}`);
+    
     const scoreBadge = this.scorer.generateScoreBadge(scoreData);
     const recommendations = this.scorer.getRecommendations(scoreData);
 
@@ -448,7 +468,17 @@ export class ComprehensiveReportGenerator {
 
     <div class="summary-card">
       <h3 style="margin-top: 0;">Executive Summary</h3>
-      <p><strong>Generated:</strong> ${this.escapeHtml(summary['Generated At'])}</p>
+      <div style="background: #e3f2fd; padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 4px solid #2196f3;">
+        <p style="margin: 0; font-weight: 600; color: #1565c0;">
+          📅 <strong>Report Generated:</strong> ${this.escapeHtml(new Date(summary['Generated At']).toLocaleString())}
+        </p>
+        ${this.testedUrl ? `<p style="margin: 8px 0 0 0; font-weight: 600; color: #1565c0;">
+          🌐 <strong>Tested URL:</strong> <a href="${this.escapeHtml(this.testedUrl)}" target="_blank" style="color: #1976d2;">${this.escapeHtml(this.testedUrl)}</a>
+        </p>` : ''}
+        <p style="margin: 8px 0 0 0; font-size: 13px; color: #1976d2;">
+          💡 <strong>Note:</strong> If you see the same results for different URLs, please clear your browser cache or hard refresh (Ctrl+F5 / Cmd+Shift+R)
+        </p>
+      </div>
       <div class="summary-grid">
         <div class="summary-item"><div class="summary-title">Total Criteria</div><div class="summary-value">${summary['Total WCAG 2.1 Criteria']}</div></div>
         <div class="summary-item"><div class="summary-title">Passed</div><div class="summary-value">${summary['Passed']}</div></div>

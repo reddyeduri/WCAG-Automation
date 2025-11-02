@@ -578,8 +578,8 @@
           <div class="service-card">
             <h2>Reports Generated</h2>
             <p>HTML reports, Excel spreadsheets, JSON data, screenshots, and accessibility tree analysis</p>
-          </div>
-        </div>
+      </div>
+    </div>
       </section>
     </main>
     
@@ -658,7 +658,7 @@
       
       go.onclick = async () => {
         let url = (u.value || '').trim();
-        if (!url) {
+        if (!url) { 
           outSection.style.display = 'block';
           out.innerHTML = `
             <div class="alert alert-warning">
