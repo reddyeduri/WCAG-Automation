@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   timeout: 600_000, // 10 minutes for comprehensive WCAG scans with full features
-  
+
   reporter: [
     ['html'],
     ['json', { outputFile: 'reports/test-results.json' }],
@@ -19,12 +19,24 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Load authentication state if it exists
+    storageState: process.env.STORAGE_STATE || (require('fs').existsSync('auth-state.json') ? 'auth-state.json' : undefined),
   },
 
   projects: [
+    // Setup project for authentication (runs once before tests)
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Use authentication state from setup if it exists
+        storageState: 'auth-state.json'
+      },
+      dependencies: ['setup'], // Run setup before chromium tests
     },
     // Disabled Firefox and WebKit - Chrome only
     // {

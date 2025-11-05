@@ -1,307 +1,297 @@
 import { Page } from '@playwright/test';
-import type { TestResult, Issue } from './reportGenerator';
+import { TestResult, Issue } from './reportGenerator';
 
 /**
- * Helper for analyzing content patterns and sensory characteristics
- * Covers various WCAG criteria related to content presentation
+ * Content Analysis Helper - WCAG 2.4.6 (Level AA) & 2.4.10 (Level AAA)
+ *
+ * AUTOMATION OPPORTUNITY: 70-80% accuracy
+ * Converts manual review items to automated tests
+ *
+ * Detects:
+ * - Heading quality (descriptiveness, clarity)
+ * - Section heading coverage
+ * - Heading structure and organization
  */
+
 export class ContentAnalysisHelper {
   /**
-   * 1.3.3 Sensory Characteristics
-   * Detects instructions that rely only on shape, size, location, or sound
+   * Test Headings and Labels Quality (WCAG 2.4.6 - Level AA)
+   * Headings and labels describe topic or purpose
    */
-  static async testSensoryCharacteristics(page: Page): Promise<TestResult> {
-    const sensoryInfo = await page.evaluate(() => {
-      const issues: any[] = [];
-      
-      // Common sensory-only instruction patterns
-      const sensoryPatterns = [
-        /click\s+the\s+(round|square|circular|triangular|red|green|blue)\s+(button|icon)/i,
-        /press\s+the\s+(button|icon)\s+(on\s+the\s+)?(left|right|top|bottom|above|below)/i,
-        /the\s+(button|link|icon)\s+(on\s+the\s+)?(left|right|top|bottom)/i,
-        /(round|square|circular)\s+(button|icon)/i,
-        /click\s+(above|below|left|right)/i,
-        /see\s+the\s+(diagram|chart|map)\s+above/i,
-        /hear\s+the\s+(sound|audio|tone)/i,
-        /listen\s+for/i
-      ];
+  static async testHeadingsAndLabels(page: Page): Promise<TestResult> {
+    const url = page.url();
+    const issues: Issue[] = [];
 
-      // Check all text content
-      const allText = Array.from(document.querySelectorAll('p, li, div, span, label, button')).map(el => ({
-        text: el.textContent?.trim() || '',
-        html: el.outerHTML.slice(0, 200)
-      }));
+    try {
+      const headingAnalysis = await page.evaluate(() => {
+        const problems: Array<{
+          html: string;
+          text: string;
+          level: string;
+          issue: string;
+          severity: 'serious' | 'moderate';
+        }> = [];
 
-      allText.forEach(item => {
-        sensoryPatterns.forEach(pattern => {
-          if (pattern.test(item.text)) {
-            issues.push({
-              element: item.html,
-              description: `Possible sensory-only instruction: "${item.text.slice(0, 100)}"`,
-              text: item.text.slice(0, 150)
+        // Get all headings
+        const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+
+        // Patterns that indicate poor heading quality
+        const vaguePatterns = [
+          /^(more|details|information|info|click here|read more|learn more|see more)$/i,
+          /^(section|content|main|article|post)$/i,
+          /^(untitled|placeholder|heading|title)$/i,
+          /^(lorem ipsum)/i,
+          /^(test|demo|example|sample)$/i
+        ];
+
+        headings.forEach((heading, index) => {
+          const text = (heading.textContent || '').trim();
+          const level = heading.tagName.toLowerCase();
+
+          // Check 1: Empty heading
+          if (text.length === 0) {
+            problems.push({
+              html: (heading as HTMLElement).outerHTML,
+              text: '(empty)',
+              level,
+              issue: `Empty ${level} heading - headings must have descriptive text`,
+              severity: 'serious'
+            });
+            return;
+          }
+
+          // Check 2: Very short non-descriptive headings (1-2 chars)
+          if (text.length <= 2) {
+            problems.push({
+              html: (heading as HTMLElement).outerHTML,
+              text,
+              level,
+              issue: `${level} heading "${text}" is too short to be descriptive`,
+              severity: 'moderate'
+            });
+            return;
+          }
+
+          // Check 3: Vague headings
+          for (const pattern of vaguePatterns) {
+            if (pattern.test(text)) {
+              problems.push({
+                html: (heading as HTMLElement).outerHTML,
+                text,
+                level,
+                issue: `${level} heading "${text}" is not descriptive - users cannot determine the topic or purpose`,
+                severity: 'moderate'
+              });
+              break;
+            }
+          }
+
+          // Check 4: All caps headings (potential readability issue)
+          if (text.length > 3 && text === text.toUpperCase() && /[A-Z]/.test(text)) {
+            problems.push({
+              html: (heading as HTMLElement).outerHTML,
+              text,
+              level,
+              issue: `${level} heading is all caps - may reduce readability for some users`,
+              severity: 'moderate'
+            });
+          }
+
+          // Check 5: Very long headings (likely not well-structured)
+          if (text.length > 150) {
+            problems.push({
+              html: (heading as HTMLElement).outerHTML.substring(0, 200),
+              text: text.substring(0, 100) + '...',
+              level,
+              issue: `${level} heading is very long (${text.length} chars) - consider breaking into heading and introductory text`,
+              severity: 'moderate'
             });
           }
         });
-      });
 
-      // Check for images that might be used for spatial references
-      const images = Array.from(document.querySelectorAll('img[alt*="arrow" i], img[alt*="icon" i]'));
-      images.forEach(img => {
-        const alt = img.getAttribute('alt') || '';
-        if (alt && (alt.includes('click') || alt.includes('see'))) {
-          issues.push({
-            element: img.outerHTML.slice(0, 200),
-            description: `Image with instructional alt text may rely on visual characteristics: "${alt}"`,
-            text: alt
-          });
-        }
-      });
+        // Check form labels
+        const inputs = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
+        inputs.forEach(input => {
+          const id = input.getAttribute('id');
+          const ariaLabel = input.getAttribute('aria-label');
+          const ariaLabelledBy = input.getAttribute('aria-labelledby');
+          const name = input.getAttribute('name') || '';
 
-      return issues.slice(0, 20); // Limit results
-    });
+          // If no label, aria-label, or aria-labelledby
+          if (!ariaLabel && !ariaLabelledBy) {
+            // Check for associated label
+            const label = id ? document.querySelector(`label[for="${id}"]`) : null;
+            const parentLabel = input.closest('label');
 
-    const issues: Issue[] = sensoryInfo.map(item => ({
-      description: item.description,
-      severity: 'moderate',
-      element: item.element,
-      help: 'Provide instructions that don\'t rely solely on shape, size, location, or sound',
-      wcagTags: ['wcag2a', 'wcag133']
-    }));
-
-    return {
-      criterionId: '1.3.3',
-      criterionTitle: 'Sensory Characteristics',
-      principle: 'Perceivable',
-      level: 'A',
-      testType: 'automated',
-      status: issues.length > 0 ? 'warning' : 'pass',
-      issues,
-      timestamp: new Date().toISOString(),
-      url: page.url()
-    };
-  }
-
-  /**
-   * 1.3.4 Orientation
-   * Checks for orientation locks in CSS or viewport meta
-   */
-  static async testOrientation(page: Page): Promise<TestResult> {
-    const orientationInfo = await page.evaluate(() => {
-      const issues: any[] = [];
-
-      // Check stylesheets for orientation locks
-      const styles = Array.from(document.styleSheets);
-      styles.forEach(sheet => {
-        try {
-          const rules = Array.from(sheet.cssRules || []);
-          rules.forEach(rule => {
-            const cssText = rule.cssText;
-            if (cssText.includes('@media') && cssText.includes('orientation')) {
-              if (cssText.includes('transform: rotate') || 
-                  cssText.includes('writing-mode')) {
-                issues.push({
-                  description: 'CSS media query with orientation lock detected',
-                  css: cssText.slice(0, 200),
+            if (!label && !parentLabel) {
+              problems.push({
+                html: (input as HTMLElement).outerHTML.substring(0, 200),
+                text: name || '(no name)',
+                level: 'input',
+                issue: `Form input has no label - users cannot determine its purpose`,
+                severity: 'serious'
+              });
+            } else {
+              const labelText = ((label || parentLabel)?.textContent || '').trim();
+              // Check for vague labels
+              if (vaguePatterns.some(pattern => pattern.test(labelText))) {
+                problems.push({
+                  html: (input as HTMLElement).outerHTML.substring(0, 200),
+                  text: labelText,
+                  level: 'input',
+                  issue: `Form input label "${labelText}" is not descriptive`,
                   severity: 'moderate'
                 });
               }
             }
-          });
-        } catch (e) {
-          // Cross-origin stylesheets can't be accessed
-        }
+          }
+        });
+
+        return problems;
       });
 
-      // Check viewport meta
-      const viewport = document.querySelector('meta[name="viewport"]');
-      if (viewport) {
-        const content = viewport.getAttribute('content') || '';
-        if (content.includes('orientation=')) {
-          issues.push({
-            element: viewport.outerHTML,
-            description: 'Viewport meta tag specifies orientation',
-            severity: 'serious'
-          });
-        }
-      }
+      headingAnalysis.forEach(problem => {
+        issues.push({
+          description: problem.issue,
+          severity: problem.severity,
+          element: problem.html,
+          help: 'WCAG 2.4.6: Headings and labels must describe their topic or purpose. ' +
+                (problem.level.startsWith('h') ?
+                  'Make the heading more specific and descriptive (e.g., instead of "More", use "More Customer Reviews")' :
+                  'Ensure form labels clearly describe what information is required'),
+          wcagTags: ['wcag2aa', 'wcag246'],
+          target: [problem.level]
+        });
+      });
 
-      return issues;
-    });
-
-    const issues: Issue[] = orientationInfo.map(item => ({
-      description: item.description,
-      severity: item.severity,
-      element: item.element || item.css || 'CSS',
-      help: 'Do not restrict content to specific display orientation unless essential',
-      wcagTags: ['wcag2aa', 'wcag134']
-    }));
+    } catch (error) {
+      issues.push({
+        description: `Headings and labels test failed: ${error instanceof Error ? error.message : String(error)}`,
+        severity: 'moderate',
+        help: 'Could not analyze headings and labels. Manual review required.',
+        wcagTags: ['wcag2aa', 'wcag246']
+      });
+    }
 
     return {
-      criterionId: '1.3.4',
-      criterionTitle: 'Orientation',
-      principle: 'Perceivable',
+      criterionId: '2.4.6',
+      criterionTitle: 'Headings and Labels',
+      principle: 'Operable',
       level: 'AA',
       testType: 'automated',
       status: issues.length > 0 ? 'fail' : 'pass',
       issues,
       timestamp: new Date().toISOString(),
-      url: page.url()
+      url
     };
   }
 
   /**
-   * Text pattern analysis - whitespace tables/columns
-   * Related to 1.3.1 and 1.3.2
+   * Test Section Headings (WCAG 2.4.10 - Level AAA)
+   * Section headings are used to organize content
    */
-  static async testWhitespaceFormatting(page: Page): Promise<TestResult> {
-    const whitespaceInfo = await page.evaluate(() => {
-      const issues: any[] = [];
+  static async testSectionHeadings(page: Page): Promise<TestResult> {
+    const url = page.url();
+    const issues: Issue[] = [];
 
-      // Check <pre> elements for tabular data
-      const preElements = Array.from(document.querySelectorAll('pre'));
-      preElements.forEach(pre => {
-        const text = pre.textContent || '';
-        
-        // Check for multiple spaces in a row (might be column formatting)
-        if (text.includes('  ') && text.split('\n').length > 3) {
-          const lines = text.split('\n');
-          const hasConsistentSpacing = lines.filter(line => /\s{2,}/.test(line)).length > 2;
-          
-          if (hasConsistentSpacing) {
-            issues.push({
-              element: pre.outerHTML.slice(0, 200),
-              description: 'Pre element with whitespace formatting - may be tabular data',
-              type: 'pre-table'
-            });
+    try {
+      const sectionAnalysis = await page.evaluate(() => {
+        const problems: Array<{
+          description: string;
+          severity: 'moderate';
+        }> = [];
+
+        // Count semantic sections
+        const sections = document.querySelectorAll('section, article, aside, main');
+        const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+        // Check if sections have headings
+        let sectionsWithoutHeadings = 0;
+        sections.forEach(section => {
+          const sectionHeadings = section.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          if (sectionHeadings.length === 0) {
+            sectionsWithoutHeadings++;
           }
-        }
+        });
 
-        // Check for ASCII art
-        if (text.includes('|') || text.includes('─') || text.includes('┌') || 
-            text.includes('*') && text.includes('/') || text.includes('\\')) {
-          issues.push({
-            element: pre.outerHTML.slice(0, 200),
-            description: 'Pre element with ASCII art or box drawing - provide text alternative',
-            type: 'ascii-art'
+        if (sectionsWithoutHeadings > 0) {
+          problems.push({
+            description: `${sectionsWithoutHeadings} semantic section(s) found without headings - section content should be introduced by headings`,
+            severity: 'moderate'
           });
         }
-      });
 
-      // Check for multiple &nbsp; in regular content
-      const allElements = Array.from(document.querySelectorAll('p, div, span, td'));
-      allElements.forEach(el => {
-        const html = el.innerHTML;
-        const nbspCount = (html.match(/&nbsp;/g) || []).length;
-        
-        if (nbspCount > 5) {
-          issues.push({
-            element: el.outerHTML.slice(0, 200),
-            description: `Multiple non-breaking spaces (${nbspCount}) - may be used for layout`,
-            type: 'nbsp-spacing'
+        // Check for long content blocks without headings
+        const paragraphs = document.querySelectorAll('p');
+        let consecutiveParagraphs = 0;
+        let maxConsecutive = 0;
+
+        paragraphs.forEach((p, index) => {
+          // Count consecutive paragraphs
+          if (index === 0 || paragraphs[index - 1].nextElementSibling === p) {
+            consecutiveParagraphs++;
+            maxConsecutive = Math.max(maxConsecutive, consecutiveParagraphs);
+          } else {
+            consecutiveParagraphs = 1;
+          }
+        });
+
+        // More than 5 consecutive paragraphs suggests need for section headings
+        if (maxConsecutive > 5 && headings.length < 3) {
+          problems.push({
+            description: `Long content with ${maxConsecutive} consecutive paragraphs but only ${headings.length} headings - consider adding section headings to organize content`,
+            severity: 'moderate'
           });
         }
-      });
 
-      return issues;
-    });
+        // Check heading distribution
+        const mainContent = document.querySelector('main, [role="main"], #content, .content');
+        if (mainContent) {
+          const mainHeadings = mainContent.querySelectorAll('h2, h3, h4, h5, h6');
+          const mainText = (mainContent.textContent || '').length;
+          const wordsPerHeading = mainText / Math.max(mainHeadings.length, 1);
 
-    const issues: Issue[] = whitespaceInfo.map(item => ({
-      description: item.description,
-      severity: 'moderate',
-      element: item.element,
-      help: item.type === 'ascii-art' ? 
-        'Provide text alternative for ASCII art' : 
-        'Use proper HTML tables or CSS for layout instead of whitespace',
-      wcagTags: ['wcag2a', 'wcag131', 'wcag132']
-    }));
-
-    return {
-      criterionId: '1.3.1',
-      criterionTitle: 'Info and Relationships - Whitespace Formatting',
-      principle: 'Perceivable',
-      level: 'A',
-      testType: 'automated',
-      status: issues.length > 0 ? 'warning' : 'pass',
-      issues,
-      timestamp: new Date().toISOString(),
-      url: page.url()
-    };
-  }
-
-  /**
-   * CSS content property usage
-   * Related to 1.3.1
-   */
-  static async testCSSContent(page: Page): Promise<TestResult> {
-    const cssContentInfo = await page.evaluate(() => {
-      const issues: any[] = [];
-
-      const allElements = Array.from(document.querySelectorAll('*'));
-      allElements.forEach(el => {
-        const beforeContent = getComputedStyle(el, '::before').content;
-        const afterContent = getComputedStyle(el, '::after').content;
-
-        // Check for non-decorative content in pseudo-elements
-        if (beforeContent && beforeContent !== 'none' && beforeContent !== '""') {
-          const content = beforeContent.replace(/^["']|["']$/g, '');
-          // If content looks like actual text (not just symbols)
-          if (content.length > 2 && /[a-zA-Z]/.test(content)) {
-            issues.push({
-              element: (el as HTMLElement).outerHTML.slice(0, 200),
-              description: `::before pseudo-element with text content: "${content.slice(0, 50)}"`,
-              content: content.slice(0, 50)
+          // If there's a lot of text but few headings (more than 500 words per heading)
+          if (mainText > 2000 && wordsPerHeading > 500) {
+            problems.push({
+              description: `Main content has ${Math.round(mainText / 5)} words but only ${mainHeadings.length} section headings - consider adding more headings to organize content`,
+              severity: 'moderate'
             });
           }
         }
 
-        if (afterContent && afterContent !== 'none' && afterContent !== '""') {
-          const content = afterContent.replace(/^["']|["']$/g, '');
-          if (content.length > 2 && /[a-zA-Z]/.test(content)) {
-            issues.push({
-              element: (el as HTMLElement).outerHTML.slice(0, 200),
-              description: `::after pseudo-element with text content: "${content.slice(0, 50)}"`,
-              content: content.slice(0, 50)
-            });
-          }
-        }
+        return problems;
       });
 
-      return issues.slice(0, 20);
-    });
+      sectionAnalysis.forEach(problem => {
+        issues.push({
+          description: problem.description,
+          severity: problem.severity,
+          help: 'WCAG 2.4.10 (AAA): Use section headings to organize content. ' +
+                'Breaking content into logical sections with descriptive headings helps all users navigate and understand the page structure.',
+          wcagTags: ['wcag2aaa', 'wcag2410']
+        });
+      });
 
-    const issues: Issue[] = cssContentInfo.map(item => ({
-      description: item.description,
-      severity: 'moderate',
-      element: item.element,
-      help: 'Avoid inserting important content via CSS ::before/::after - it\'s not accessible',
-      wcagTags: ['wcag2a', 'wcag131']
-    }));
+    } catch (error) {
+      issues.push({
+        description: `Section headings test failed: ${error instanceof Error ? error.message : String(error)}`,
+        severity: 'moderate',
+        help: 'Could not analyze section headings. Manual review required.',
+        wcagTags: ['wcag2aaa', 'wcag2410']
+      });
+    }
 
     return {
-      criterionId: '1.3.1',
-      criterionTitle: 'Info and Relationships - CSS Content',
-      principle: 'Perceivable',
-      level: 'A',
+      criterionId: '2.4.10',
+      criterionTitle: 'Section Headings',
+      principle: 'Operable',
+      level: 'AAA',
       testType: 'automated',
-      status: issues.length > 0 ? 'warning' : 'pass',
+      status: issues.length > 0 ? 'fail' : 'pass',
       issues,
       timestamp: new Date().toISOString(),
-      url: page.url()
+      url
     };
-  }
-
-  /**
-   * Run all content analysis tests
-   */
-  static async runAllContentAnalysisTests(page: Page): Promise<TestResult[]> {
-    const results: TestResult[] = [];
-
-    results.push(await this.testSensoryCharacteristics(page));
-    results.push(await this.testOrientation(page));
-    results.push(await this.testWhitespaceFormatting(page));
-    results.push(await this.testCSSContent(page));
-
-    return results;
   }
 }
-

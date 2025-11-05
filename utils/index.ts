@@ -20,6 +20,8 @@ export { PredictabilityHelper } from './predictabilityHelper';
 export { HoverFocusHelper } from './hoverFocusHelper';
 export { MotionGestureHelper } from './motionGestureHelper';
 export { ContentAnalysisHelper } from './contentAnalysisHelper';
+export { LinkPurposeHelper } from './linkPurposeHelper';
+export { NavigationHelper } from './navigationHelper';
 
 // Utilities
 export { ExcelParser } from './excelParser';

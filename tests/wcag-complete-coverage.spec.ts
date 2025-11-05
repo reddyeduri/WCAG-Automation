@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { 
-  AxeHelper, 
-  KeyboardHelper, 
+import {
+  AxeHelper,
+  KeyboardHelper,
   AccessibilityTreeHelper,
   MediaHelper,
   TimingAnimationHelper,
@@ -9,17 +9,24 @@ import {
   HoverFocusHelper,
   MotionGestureHelper,
   ContentAnalysisHelper,
+  LinkPurposeHelper,
+  NavigationHelper,
+  MeaningfulSequenceHelper,
   WCAG22Helper,
   WCAGAdvancedHelper,
   ManualTestFlags,
   ResponsiveHelper,
-  ComprehensiveReportGenerator 
+  ComprehensiveReportGenerator
 } from '../utils';
 import * as path from 'path';
 
 /**
  * COMPLETE WCAG 2.1/2.2 COVERAGE TEST SUITE
  * This test suite aims for 100% coverage of all testable WCAG criteria
+ *
+ * FIXED VERSION - Corrects 3 critical bugs:
+ * 1. Lines 140-148: Fixed ResponsiveHelper.testResizeText() and testReflow() (methods don't exist)
+ * 2. Line 237: Fixed KeyboardHelper.testFocusOrder() (method doesn't exist)
  */
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
@@ -27,7 +34,7 @@ const reportDir = path.join('reports', 'complete-coverage');
 const reportGen = new ComprehensiveReportGenerator(reportDir);
 
 test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
-  
+
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
     await page.waitForLoadState('domcontentloaded');
@@ -37,14 +44,14 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
     // Generate comprehensive reports
     const excelPath = reportGen.generateComprehensiveReport('wcag-complete-coverage.xlsx');
     const htmlPath = reportGen.generateComprehensiveHtmlReport('wcag-complete-coverage.html');
-    
+
     console.log('\n' + '='.repeat(70));
     console.log('📊 COMPLETE WCAG COVERAGE REPORTS GENERATED:');
     console.log('='.repeat(70));
     console.log(`📈 Excel Report: ${excelPath}`);
     console.log(`🌐 HTML Report:  ${htmlPath}`);
     console.log('='.repeat(70) + '\n');
-    
+
     reportGen.printConsoleSummary();
   });
 
@@ -101,6 +108,12 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
       reportGen.addResults([result]);
     });
 
+    test('[1.3.2] Meaningful Sequence (Enhanced)', async ({ page }) => {
+      const result = await MeaningfulSequenceHelper.testMeaningfulSequence(page);
+      reportGen.addResults([result]);
+      expect(result.status).not.toBe('fail');
+    });
+
     test('[1.3.3] Sensory characteristics', async ({ page }) => {
       const result = await ContentAnalysisHelper.testSensoryCharacteristics(page);
       reportGen.addResults([result]);
@@ -113,9 +126,9 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
     });
 
     test('[1.3.5] Identify Input Purpose', async ({ page }) => {
-      const fullScan = await AxeHelper.runAxeScan(page, { 
+      const fullScan = await AxeHelper.runAxeScan(page, {
         wcagLevel: 'AA',
-        rules: ['autocomplete-valid'] 
+        rules: ['autocomplete-valid']
       });
       reportGen.addResults(fullScan);
     });
@@ -137,14 +150,13 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
       expect(result.status).not.toBe('fail');
     });
 
-    test('[1.4.4] Resize Text', async ({ page }) => {
-      const result = await ResponsiveHelper.testResizeText(page);
-      reportGen.addResults([result]);
-    });
-
-    test('[1.4.10] Reflow', async ({ page }) => {
-      const result = await ResponsiveHelper.testReflow(page);
-      reportGen.addResults([result]);
+    // ✅ BUG FIX #1 & #2: Combined testResizeText and testReflow into single test using testZoomAndReflow
+    // BEFORE: Called ResponsiveHelper.testResizeText() and ResponsiveHelper.testReflow() - both undefined!
+    // AFTER: Uses ResponsiveHelper.testZoomAndReflow() which returns array of both results
+    test('[1.4.4 & 1.4.10] Resize Text and Reflow', async ({ page }) => {
+      const results = await ResponsiveHelper.testZoomAndReflow(page);
+      reportGen.addResults(results);
+      results.forEach(result => expect(result.status).not.toBe('fail'));
     });
 
     test('[1.4.11] Non-text Contrast', async ({ page }) => {
@@ -233,8 +245,36 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
       expect(result.status).not.toBe('fail');
     });
 
-    test('[2.4.3] Focus Order', async ({ page }) => {
-      const result = await KeyboardHelper.testFocusOrder(page);
+    // ✅ BUG FIX #3: testFocusOrder doesn't exist
+    // BEFORE: Called KeyboardHelper.testFocusOrder() - undefined!
+    // AFTER: Uses KeyboardHelper.testKeyboardAccessibility() which includes focus order verification
+    test('[2.4.3] Focus Order (via Keyboard Test)', async ({ page }) => {
+      const result = await KeyboardHelper.testKeyboardAccessibility(page);
+      // Map to focus order criterion
+      const focusOrderResult = {
+        ...result,
+        criterionId: '2.4.3',
+        criterionTitle: 'Focus Order',
+        testType: 'semi-automated' as const
+      };
+      reportGen.addResults([focusOrderResult]);
+      expect(focusOrderResult.status).not.toBe('fail');
+    });
+
+    test('[2.4.4] Link Purpose (In Context)', async ({ page }) => {
+      const result = await LinkPurposeHelper.testLinkPurpose(page);
+      reportGen.addResults([result]);
+      expect(result.status).not.toBe('fail');
+    });
+
+    test('[2.4.5] Multiple Ways', async ({ page }) => {
+      const result = await NavigationHelper.testMultipleWays(page);
+      reportGen.addResults([result]);
+      expect(result.status).not.toBe('fail');
+    });
+
+    test('[2.4.6] Headings and Labels', async ({ page }) => {
+      const result = await ContentAnalysisHelper.testHeadingsAndLabels(page);
       reportGen.addResults([result]);
       expect(result.status).not.toBe('fail');
     });
@@ -243,6 +283,24 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
       const result = await KeyboardHelper.testFocusVisible(page);
       reportGen.addResults([result]);
       expect(result.status).not.toBe('fail');
+    });
+
+    test('[2.4.8] Location', async ({ page }) => {
+      const result = await NavigationHelper.testLocation(page);
+      reportGen.addResults([result]);
+      // AAA level - warning acceptable
+    });
+
+    test('[2.4.9] Link Purpose (Link Only)', async ({ page }) => {
+      const result = await LinkPurposeHelper.testLinkPurposeLinkOnly(page);
+      reportGen.addResults([result]);
+      // AAA level - warning acceptable
+    });
+
+    test('[2.4.10] Section Headings', async ({ page }) => {
+      const result = await ContentAnalysisHelper.testSectionHeadings(page);
+      reportGen.addResults([result]);
+      // AAA level - warning acceptable
     });
 
     test('[2.4.12] Focus Not Obscured (WCAG 2.2)', async ({ page }) => {
@@ -403,7 +461,7 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
   test('Run comprehensive axe-core scan (all rules)', async ({ page }) => {
     const results = await AxeHelper.runAxeScan(page, { wcagLevel: 'AA' });
     reportGen.addResults(results);
-    
+
     const failures = results.filter(r => r.status === 'fail');
     console.log(`\n📊 Axe-core found ${failures.length} failures across ${results.length} criteria\n`);
   });
@@ -414,8 +472,7 @@ test.describe('🎯 WCAG Complete Coverage - 100% Implementation', () => {
   test('Generate manual test flags', async ({ page }) => {
     const manualFlags = ManualTestFlags.generateManualFlags(page.url());
     reportGen.addResults(manualFlags);
-    
+
     console.log(`\n📋 Generated ${manualFlags.length} manual test flags\n`);
   });
 });
-
